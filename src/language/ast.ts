@@ -62,7 +62,7 @@ export namespace OhmAST {
 
     export interface Grammar extends Token {
       type: Type.Grammar;
-      ident: string;
+      ident: Token;
       rules: Rule[];
       super?: SuperGrammar;
     }
@@ -74,10 +74,11 @@ export namespace OhmAST {
 
     export interface Rule extends Token {
       type: Type.Rule;
-      name: string;
+      name: Token;
       formals: Formals[];
       desc: string;
       body: Seq[];
+      root?: Grammar;
     }
 
     export interface Seq extends Token {
@@ -87,7 +88,7 @@ export namespace OhmAST {
 
     export interface Term extends Token {
       type: Type.Base;
-      ident?: string;
+      ident?: Token;
       params?: Seq[];
     }
 
@@ -141,15 +142,24 @@ declare module "ohm-js" {
 const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
   Grammars(grammars) {
     const t = createToken(this, OhmAST.Type.Grammars);
-    t.grammars = grammars.toAST(astMapping);
+    t.grammars = grammars.toAST({});
     t.ref = {};
 
     return t;
   },
   Grammar(name, _super, _, rules, _1) {
     const t = createToken(this, OhmAST.Type.Grammar);
-    t.ident = name.sourceString;
-    t.rules = rules.toAST(astMapping);
+
+    const ctx: GrammarContext = {
+      root: t,
+    };
+
+    t.ident = name.toAST({});
+
+    t.rules = rules.toAST({
+      grammar: ctx,
+    });
+
     t.super = _super.toAST({});
 
     return t;
@@ -160,33 +170,42 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
     return t;
   },
   Rule(inner) {
-    return inner.toAST(astMapping);
+    return inner.toAST(getParameters(this));
   },
   Rule_define(ident, formals, desc, _, body) {
     const t = createToken(this, OhmAST.Type.Rule);
-    t.formals = formals.toAST(astMapping);
-    t.body = body.toAST(astMapping);
+    const ctx = getGrammarContext(this);
+    t.root = ctx?.root;
 
-    t.name = ident.sourceString;
+    t.formals = formals.toAST({});
+    t.body = body.toAST({});
+
+    t.name = ident.toAST({});
     t.desc = desc.sourceString;
 
     return t;
   },
   Rule_extend(ident, formals, _, body) {
     const t = createToken(this, OhmAST.Type.Rule);
-    t.formals = formals.toAST(astMapping);
-    t.body = body.toAST(astMapping);
+    const ctx = getGrammarContext(this);
+    t.root = ctx?.root;
 
-    t.name = ident.sourceString;
+    t.formals = formals.toAST({});
+    t.body = body.toAST({});
+
+    t.name = ident.toAST({});
 
     return t;
   },
   Rule_override(ident, formals, _, body) {
     const t = createToken(this, OhmAST.Type.Rule);
-    t.formals = formals.toAST(astMapping);
-    t.body = body.toAST(astMapping);
+    const ctx = getGrammarContext(this);
+    t.root = ctx?.root;
 
-    t.name = ident.sourceString;
+    t.formals = formals.toAST({});
+    t.body = body.toAST({});
+
+    t.name = ident.toAST({});
 
     return t;
   },
@@ -242,7 +261,7 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
   },
   Base_application(ident, _) {
     const t = createToken(this, OhmAST.Type.Base);
-    t.ident = ident.sourceString;
+    t.ident = ident.toAST({ a: 1 });
 
     return t;
   },
@@ -255,7 +274,22 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
   Base_terminal(arg0) {
     return createToken(this, OhmAST.Type.Base);
   },
+  ident(name) {
+    return createToken(this, OhmAST.Type.ident);
+  },
 };
+
+interface GrammarContext {
+  root: OhmAST.Tokens.Grammar;
+}
+
+function getGrammarContext(node: Node): GrammarContext | undefined {
+  return getParameters(node)?.grammar;
+}
+
+function getParameters(node: Node) {
+  return node.args.mapping;
+}
 
 const REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/gm;
 
