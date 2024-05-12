@@ -1,12 +1,11 @@
-import { toAST } from "ohm-js/extras";
+import { toAST } from 'ohm-js/extras'
 import {
-  grammars,
   ohmGrammar,
   type Interval,
   type LineAndColumnInfo,
-  type Node,
-} from "ohm-js";
-import type { OhmActionDict } from "./ohm-grammar.ohm-bundle";
+  type Node
+} from 'ohm-js'
+import type { OhmActionDict } from '../grammar/ohm-grammar.ohm-bundle'
 
 export namespace OhmAST {
   export enum Type {
@@ -42,59 +41,59 @@ export namespace OhmAST {
     tokens,
     token,
     operator,
-    punctuation,
+    punctuation
   }
 
   export interface Location extends LineAndColumnInfo {}
 
   export interface Token {
-    type: Type;
-    location: Location;
-    _source: string;
+    type: Type
+    location: Location
+    _source: string
   }
 
   export namespace Tokens {
     export interface Grammars extends Token {
-      type: Type.Grammars;
-      grammars: Grammar[];
-      ref: Record<string, string>;
+      type: Type.Grammars
+      grammars: Grammar[]
+      ref: Record<string, string>
     }
 
     export interface Grammar extends Token {
-      type: Type.Grammar;
-      ident: Token;
-      rules: Rule[];
-      super?: SuperGrammar;
+      type: Type.Grammar
+      ident: Token
+      rules: Rule[]
+      super?: SuperGrammar
     }
 
     export interface SuperGrammar extends Token {
-      type: Type.SuperGrammar;
-      name: string;
+      type: Type.SuperGrammar
+      name: string
     }
 
     export interface Rule extends Token {
-      type: Type.Rule;
-      name: Token;
-      formals: Formals[];
-      desc: string;
-      body: Seq[];
-      root?: Grammar;
+      type: Type.Rule
+      name: Token
+      formals: Formals[]
+      desc: string
+      body: Seq[]
+      root?: Grammar
     }
 
     export interface Seq extends Token {
-      type: Type.Seq;
-      terms: Term[];
+      type: Type.Seq
+      terms: Term[]
     }
 
     export interface Term extends Token {
-      type: Type.Base;
-      ident?: Token;
-      params?: Seq[];
+      type: Type.Base
+      ident?: Token
+      params?: Seq[]
     }
 
     export interface Formals extends Token {
-      type: Type.Formals;
-      idents: string[];
+      type: Type.Formals
+      idents: string[]
     }
 
     export type All =
@@ -104,20 +103,20 @@ export namespace OhmAST {
       | Seq
       | Term
       | Formals
-      | SuperGrammar;
+      | SuperGrammar
 
     export type GetTokenByType<T, U extends All = All> = U extends { type: T }
       ? U
-      : never;
+      : never
   }
 }
 
 //  ----------
 
 function nodeLocationInfo(source: Interval) {
-  const info = source.getLineAndColumn();
+  const info = source.getLineAndColumn()
 
-  return info;
+  return info
 }
 
 function createToken<T extends OhmAST.Type>(
@@ -127,193 +126,193 @@ function createToken<T extends OhmAST.Type>(
   const _t: OhmAST.Token = {
     type,
     location: nodeLocationInfo(t.source),
-    _source: t.sourceString,
-  };
+    _source: t.sourceString
+  }
 
-  return _t as any;
+  return _t as any
 }
 
-declare module "ohm-js" {
+declare module 'ohm-js' {
   interface Node {
-    toAST(mapping: any): any;
+    toAST(mapping: any): any
   }
 }
 
 const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
   Grammars(grammars) {
-    const t = createToken(this, OhmAST.Type.Grammars);
-    t.grammars = grammars.toAST({});
-    t.ref = {};
+    const t = createToken(this, OhmAST.Type.Grammars)
+    t.grammars = grammars.toAST({})
+    t.ref = {}
 
-    return t;
+    return t
   },
   Grammar(name, _super, _, rules, _1) {
-    const t = createToken(this, OhmAST.Type.Grammar);
+    const t = createToken(this, OhmAST.Type.Grammar)
 
     const ctx: GrammarContext = {
-      root: t,
-    };
+      root: t
+    }
 
-    t.ident = name.toAST({});
+    t.ident = name.toAST({})
 
     t.rules = rules.toAST({
-      grammar: ctx,
-    });
+      grammar: ctx
+    })
 
-    t.super = _super.toAST({});
+    t.super = _super.toAST({})
 
-    return t;
+    return t
   },
   SuperGrammar(_, name) {
-    const t = createToken(this, OhmAST.Type.SuperGrammar);
-    t.name = name.sourceString;
-    return t;
+    const t = createToken(this, OhmAST.Type.SuperGrammar)
+    t.name = name.sourceString
+    return t
   },
   Rule(inner) {
-    return inner.toAST(getParameters(this));
+    return inner.toAST(getParameters(this))
   },
   Rule_define(ident, formals, desc, _, body) {
-    const t = createToken(this, OhmAST.Type.Rule);
-    const ctx = getGrammarContext(this);
-    t.root = ctx?.root;
+    const t = createToken(this, OhmAST.Type.Rule)
+    const ctx = getGrammarContext(this)
+    t.root = ctx?.root
 
-    t.formals = formals.toAST({});
-    t.body = body.toAST({});
+    t.formals = formals.toAST({})
+    t.body = body.toAST({})
 
-    t.name = ident.toAST({});
-    t.desc = desc.sourceString;
+    t.name = ident.toAST({})
+    t.desc = desc.sourceString
 
-    return t;
+    return t
   },
   Rule_extend(ident, formals, _, body) {
-    const t = createToken(this, OhmAST.Type.Rule);
-    const ctx = getGrammarContext(this);
-    t.root = ctx?.root;
+    const t = createToken(this, OhmAST.Type.Rule)
+    const ctx = getGrammarContext(this)
+    t.root = ctx?.root
 
-    t.formals = formals.toAST({});
-    t.body = body.toAST({});
+    t.formals = formals.toAST({})
+    t.body = body.toAST({})
 
-    t.name = ident.toAST({});
+    t.name = ident.toAST({})
 
-    return t;
+    return t
   },
   Rule_override(ident, formals, _, body) {
-    const t = createToken(this, OhmAST.Type.Rule);
-    const ctx = getGrammarContext(this);
-    t.root = ctx?.root;
+    const t = createToken(this, OhmAST.Type.Rule)
+    const ctx = getGrammarContext(this)
+    t.root = ctx?.root
 
-    t.formals = formals.toAST({});
-    t.body = body.toAST({});
+    t.formals = formals.toAST({})
+    t.body = body.toAST({})
 
-    t.name = ident.toAST({});
+    t.name = ident.toAST({})
 
-    return t;
+    return t
   },
   Formals(arg0, iterms, arg2) {
-    const t = createToken(this, OhmAST.Type.Formals);
-    t.idents = iterms.asIteration().children.map((item) => item.sourceString);
-    return t;
+    const t = createToken(this, OhmAST.Type.Formals)
+    t.idents = iterms.asIteration().children.map((item) => item.sourceString)
+    return t
   },
   RuleBody(arg0, terms) {
-    return terms.toAST(astMapping);
+    return terms.toAST(astMapping)
   },
   TopLevelTerm(seq) {
-    return seq.toAST(astMapping);
+    return seq.toAST(astMapping)
   },
   TopLevelTerm_inline(seq, _) {
-    return seq.toAST(astMapping);
+    return seq.toAST(astMapping)
   },
   Seq(iters) {
-    const t = createToken(this, OhmAST.Type.Seq);
-    t.terms = iters.toAST(astMapping);
+    const t = createToken(this, OhmAST.Type.Seq)
+    t.terms = iters.toAST(astMapping)
 
-    return t;
+    return t
   },
   Iter(pred) {
-    return pred.toAST(astMapping);
+    return pred.toAST(astMapping)
   },
   Iter_opt(pred, arg1) {
-    return pred.toAST(astMapping);
+    return pred.toAST(astMapping)
   },
   Iter_plus(pred, arg1) {
-    return pred.toAST(astMapping);
+    return pred.toAST(astMapping)
   },
   Iter_star(pred, arg1) {
-    return pred.toAST(astMapping);
+    return pred.toAST(astMapping)
   },
   Pred(lex) {
-    return lex.toAST(astMapping);
+    return lex.toAST(astMapping)
   },
   Pred_lookahead(arg0, lex) {
-    return lex.toAST(astMapping);
+    return lex.toAST(astMapping)
   },
   Pred_not(arg0, lex) {
-    return lex.toAST(astMapping);
+    return lex.toAST(astMapping)
   },
   Lex(base) {
-    return base.toAST(astMapping);
+    return base.toAST(astMapping)
   },
   Lex_lex(_, base) {
-    return base.toAST(astMapping);
+    return base.toAST(astMapping)
   },
   Base(inner) {
-    return inner.toAST(astMapping);
+    return inner.toAST(astMapping)
   },
   Base_application(ident, _) {
-    const t = createToken(this, OhmAST.Type.Base);
-    t.ident = ident.toAST({ a: 1 });
+    const t = createToken(this, OhmAST.Type.Base)
+    t.ident = ident.toAST({ a: 1 })
 
-    return t;
+    return t
   },
   Base_paren(arg0, arg1, arg2) {
-    return createToken(this, OhmAST.Type.Base);
+    return createToken(this, OhmAST.Type.Base)
   },
   Base_range(arg0, arg1, arg2) {
-    return createToken(this, OhmAST.Type.Base);
+    return createToken(this, OhmAST.Type.Base)
   },
   Base_terminal(arg0) {
-    return createToken(this, OhmAST.Type.Base);
+    return createToken(this, OhmAST.Type.Base)
   },
   ident(name) {
-    return createToken(this, OhmAST.Type.ident);
-  },
-};
+    return createToken(this, OhmAST.Type.ident)
+  }
+}
 
 interface GrammarContext {
-  root: OhmAST.Tokens.Grammar;
+  root: OhmAST.Tokens.Grammar
 }
 
 function getGrammarContext(node: Node): GrammarContext | undefined {
-  return getParameters(node)?.grammar;
+  return getParameters(node)?.grammar
 }
 
 function getParameters(node: Node) {
-  return node.args.mapping;
+  return node.args.mapping
 }
 
-const REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/gm;
+const REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/gm
 
 export function parseAST(s: string) {
   try {
-    const t = ohmGrammar.match(s);
+    const t = ohmGrammar.match(s)
 
-    const ast = toAST(t, astMapping) as OhmAST.Tokens.Grammars;
+    const ast = toAST(t, astMapping) as OhmAST.Tokens.Grammars
 
-    const refResults = s.match(REF_RE);
+    const refResults = s.match(REF_RE)
 
     if (refResults) {
       refResults.forEach((item) => {
-        const SINGLE_REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/;
-        const r = item.match(SINGLE_REF_RE);
+        const SINGLE_REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/
+        const r = item.match(SINGLE_REF_RE)
         if (r?.groups) {
-          const { name, path } = r.groups;
-          ast.ref[name] = path;
+          const { name, path } = r.groups
+          ast.ref[name] = path
         }
-      });
+      })
     }
 
-    return ast;
+    return ast
   } catch (error) {
-    console.error(error);
+    console.error(error)
   }
 }

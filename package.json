@@ -47,6 +47,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "publish": "vsce publish --no-dependencies",
+    "generate:ohm": "ohm generateBundles src/grammar/*.ohm -t -e",
     "release": "x-release"
   },
   "tsup": {
@@ -61,10 +62,14 @@
   },
   "devDependencies": {
     "@0x-jerry/x-release": "^2.0.0",
+    "@ohm-js/cli": "^2.0.0",
     "@types/node": "^20.12.7",
     "@types/vscode": "^1.60.0",
     "@vscode/vsce": "^2.26.0",
     "tsup": "^8.0.2",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "ohm-js": "^17.1.0"
   }
 }
