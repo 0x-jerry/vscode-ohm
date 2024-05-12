@@ -24,6 +24,7 @@
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
+  "browser": "./dist/extension.js",
   "extensionKind": [
     "ui",
     "workspace"
