@@ -1,6 +1,6 @@
 {
   "name": "vscode-ohm",
-  "displayName": "Ohm Language",
+  "displayName": "Ohm-JS Language",
   "description": "Unofficial ohm-js language support for vscode",
   "version": "0.1.1",
   "license": "MIT",
