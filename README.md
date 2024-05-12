@@ -1,3 +1,4 @@
-# Vscode extension template
+# VSCode Ohm Language Extension
 
-1. Use tsup to bundle.
+Ohm language/syntax config is copy from https://github.com/attilah/ohm-vscode
+

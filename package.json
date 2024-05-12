@@ -1,7 +1,7 @@
 {
-  "name": "tpl-vscode-extension",
-  "displayName": "Vscode extension template",
-  "description": "template",
+  "name": "vscode-ohm",
+  "displayName": "VSCode Ohm Language Extension",
+  "description": "",
   "version": "0.0.1",
   "license": "MIT",
   "author": {
@@ -21,14 +21,26 @@
     "workspace"
   ],
   "contributes": {
-    "configuration": {},
-    "commands": [],
-    "keybindings": [],
-    "viewsContainers": {},
-    "views": {},
-    "menus": {},
-    "grammars": [],
-    "snippets": []
+    "languages": [
+      {
+        "id": "ohm",
+        "aliases": [
+          "Ohm",
+          "ohm"
+        ],
+        "extensions": [
+          ".ohm"
+        ],
+        "configuration": "./settings/language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ohm",
+        "scopeName": "source.ohm",
+        "path": "./settings/ohm.tmLanguage.json"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "tsup",
@@ -48,7 +60,7 @@
     ]
   },
   "devDependencies": {
-    "@0x-jerry/x-release": "^1.0.1",
+    "@0x-jerry/x-release": "^2.0.0",
     "@types/node": "^20.12.7",
     "@types/vscode": "^1.60.0",
     "@vscode/vsce": "^2.26.0",
