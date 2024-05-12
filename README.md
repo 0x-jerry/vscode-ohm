@@ -1,6 +1,6 @@
 # VSCode Ohm Language Extension
 
-Unofficial [ohm-js] language extension.
+Unofficial [ohm-js] language support for vscode
 
 ## Features
 
