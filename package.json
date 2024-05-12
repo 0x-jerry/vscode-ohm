@@ -1,19 +1,27 @@
 {
   "name": "vscode-ohm",
   "displayName": "VSCode Ohm Language Extension",
-  "description": "",
+  "description": "Unofficial ohm-js language extension",
   "version": "0.0.1",
   "license": "MIT",
   "author": {
     "name": "Jerry wang",
     "email": "x.jerry.wang@gmail.com"
   },
+  "repository": {
+    "url": "https://github.com/0x-jerry/vscode-ohm"
+  },
   "publisher": "fantasy",
   "engines": {
     "vscode": "^1.60.0"
   },
-  "categories": [],
-  "keywords": [],
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "ohm",
+    "ohm-js"
+  ],
   "activationEvents": [],
   "main": "./dist/extension.js",
   "extensionKind": [
@@ -48,7 +56,7 @@
     "dev": "tsup --watch",
     "publish": "vsce publish --no-dependencies",
     "generate:ohm": "ohm generateBundles src/grammar/*.ohm -t -e",
-    "release": "x-release"
+    "release": "x-release --publish false"
   },
   "tsup": {
     "entry": [
