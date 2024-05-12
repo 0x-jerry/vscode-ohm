@@ -28,6 +28,9 @@
     "ui",
     "workspace"
   ],
+  "capabilities": {
+    "virtualWorkspaces": true
+  },
   "contributes": {
     "languages": [
       {
