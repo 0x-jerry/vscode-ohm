@@ -7,7 +7,7 @@ settings:
 devDependencies:
   '@0x-jerry/x-release':
     specifier: ^2.0.0
-    version: 2.0.1
+    version: 2.0.2
   '@ohm-js/cli':
     specifier: ^2.0.0
     version: 2.0.0(ohm-js@17.1.0)
@@ -41,19 +41,19 @@ packages:
     dependencies:
       fflate: 0.8.2
       nanoid: 5.0.7
-      picocolors: 1.0.0
+      picocolors: 1.0.1
     dev: true
 
-  /@0x-jerry/x-release@2.0.1:
-    resolution: {integrity: sha512-C+LxWBHirPpHLR4rAGOEUGN3Sicl9K55aEVfUQn0rDf2xOoM4iwFsq3uErrYYPgqmh6+krIgi/bh4tMSEMVPqQ==}
+  /@0x-jerry/x-release@2.0.2:
+    resolution: {integrity: sha512-W/2/UTBSnidmyON0KxjWRhTU8N/UqvD6VaZJpfEMP2aypn1wGrgOiDbNQXD7I0P58YngySUnJp7Lb+Zn/sNugw==}
     hasBin: true
     dependencies:
       '@0x-jerry/load-pkg': 0.1.2
       '@0x-jerry/utils': 2.2.5
       cac: 6.7.14
       debug: 4.3.4
-      execa: 9.0.2
-      picocolors: 1.0.0
+      execa: 9.1.0
+      picocolors: 1.0.1
       prompts: 2.4.2
       semver: 7.6.2
       unconfig: 0.3.13
@@ -61,8 +61,8 @@ packages:
       - supports-color
     dev: true
 
-  /@antfu/utils@0.7.7:
-    resolution: {integrity: sha512-gFPqTG7otEJ8uP6wrhDv6mqwGWYZKNvAcCq6u9hOj0c+IKCEsY4L1oC9trPq2SaWIzAfHvqfBDxF591JkMf+kg==}
+  /@antfu/utils@0.7.8:
+    resolution: {integrity: sha512-rWQkqXRESdjXtc+7NRfK9lASQjpXJu1ayp7qi1d23zZorY+wBHVLHHoVcMsEnkqEBWTFqbztO7/QdJFzyEcLTg==}
     dev: true
 
   /@azure/abort-controller@1.1.0:
@@ -1144,8 +1144,8 @@ packages:
       strip-final-newline: 2.0.0
     dev: true
 
-  /execa@9.0.2:
-    resolution: {integrity: sha512-oO281GF7ksH/Ogv1xyDf1prvFta/6/XkGKxRUvA3IB2MU1rCJGlFs86HRZhdooow1ISkR0Np0rOxUCIJVw36Rg==}
+  /execa@9.1.0:
+    resolution: {integrity: sha512-lSgHc4Elo2m6bUDhc3Hl/VxvUDJdQWI40RZ4KMY9bKRc+hgMOT7II/JjbNDhI8VnMtrCb7U/fhpJIkLORZozWw==}
     engines: {node: '>=18'}
     dependencies:
       '@sindresorhus/merge-streams': 4.0.0
@@ -1903,8 +1903,8 @@ packages:
     resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
     dev: true
 
-  /picocolors@1.0.0:
-    resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}
+  /picocolors@1.0.1:
+    resolution: {integrity: sha512-anP1Z8qwhkbmu7MFP5iTt+wQKXgwzf7zTyGlcdzabySa9vd0Xt392U0rVmz9poOaBj0uHJKyyo9/upk0HrEQew==}
     dev: true
 
   /picomatch@2.3.1:
@@ -2399,7 +2399,7 @@ packages:
   /unconfig@0.3.13:
     resolution: {integrity: sha512-N9Ph5NC4+sqtcOjPfHrRcHekBCadCXWTBzp2VYYbySOHW0PfD9XLCeXshTXjkPYwLrBr9AtSeU0CZmkYECJhng==}
     dependencies:
-      '@antfu/utils': 0.7.7
+      '@antfu/utils': 0.7.8
       defu: 6.1.4
       jiti: 1.21.0
     dev: true
