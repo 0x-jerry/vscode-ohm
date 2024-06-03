@@ -14,7 +14,11 @@ import {
   Uri,
   Location,
   Range,
-  window
+  window,
+  type DocumentSymbolProvider,
+  DocumentSymbol,
+  SymbolInformation,
+  SymbolKind
 } from 'vscode'
 import { parseAST, type OhmAST } from './ast'
 
@@ -36,7 +40,7 @@ interface LocationRule extends OhmAST.Tokens.Rule {
 
 export class OhmLanguage
   extends DisposableImpl
-  implements DefinitionProvider, HoverProvider
+  implements DefinitionProvider, HoverProvider, DocumentSymbolProvider
 {
   langSelector = 'ohm'
 
@@ -48,6 +52,10 @@ export class OhmLanguage
     this.subscribe(languages.registerHoverProvider(this.langSelector, this))
     this.subscribe(
       languages.registerDefinitionProvider(this.langSelector, this)
+    )
+
+    this.subscribe(
+      languages.registerDocumentSymbolProvider(this.langSelector, this)
     )
 
     const currentDoc = window.activeTextEditor?.document
@@ -79,6 +87,32 @@ export class OhmLanguage
         })
       })
     )
+  }
+
+  provideDocumentSymbols(
+    document: TextDocument,
+    token: CancellationToken
+  ): ProviderResult<SymbolInformation[] | DocumentSymbol[]> {
+    const uri = document.uri
+    const ast = this._astMap.get(uri.toString())
+    if (!ast) return
+
+    const symbols: SymbolInformation[] = []
+
+    ast.grammars.forEach((g) => {
+      g.rules.forEach((rule) => {
+        const s = new SymbolInformation(
+          rule.name._source,
+          SymbolKind.Interface,
+          rule.root.ident._source || 'root',
+          new Location(uri, locationToRange(rule.name))
+        )
+
+        symbols.push(s)
+      })
+    })
+
+    return symbols
   }
 
   _isOhmLang(uri: Uri) {
@@ -218,4 +252,18 @@ export class OhmLanguage
 
     return new Hover(mdStr)
   }
+}
+
+function locationToRange(token: OhmAST.Token): Range {
+  const start = new Position(
+    token.location.lineNum - 1,
+    token.location.colNum - 1
+  )
+
+  const end = new Position(
+    token.location.lineNum - 1,
+    token.location.colNum - 1 + token._source.length
+  )
+
+  return new Range(start, end)
 }
