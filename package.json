@@ -74,13 +74,13 @@
     ]
   },
   "devDependencies": {
-    "@0x-jerry/x-release": "^2.0.0",
+    "@0x-jerry/x-release": "^2.2.2",
     "@ohm-js/cli": "^2.0.0",
-    "@types/node": "^20.12.7",
+    "@types/node": "^20.14.0",
     "@types/vscode": "^1.60.0",
-    "@vscode/vsce": "^2.26.0",
+    "@vscode/vsce": "^2.26.1",
     "ohm-js": "^17.1.0",
-    "tsup": "^8.0.2",
+    "tsup": "^8.1.0",
     "typescript": "^5.4.5"
   }
 }
