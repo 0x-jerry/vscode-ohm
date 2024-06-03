@@ -7,6 +7,7 @@ Unofficial [ohm-js] language support for vscode
 - Syntax highlight
 - Jump to definition
 - Hover to show definition source
+- Provide rule symbols
 
 ## Super Grammar Reference
 
