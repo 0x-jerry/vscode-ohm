@@ -208,13 +208,25 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
 
     return t
   },
-  Formals(arg0, iterms, arg2) {
+  Formals(arg0, terms, arg2) {
     const t = createToken(this, OhmAST.Type.Formals)
-    t.idents = iterms.asIteration().children.map((item) => item.sourceString)
+    t.idents = terms.asIteration().children.map((item) => item.sourceString)
     return t
   },
   RuleBody(arg0, terms) {
     return terms.toAST(astMapping)
+  },
+  OverrideRuleBody(arg0, terms) {
+    return terms.toAST(astMapping)
+  },
+  OverrideTopLevelTerm(arg0) {
+    return arg0.toAST(astMapping)
+  },
+  OverrideTopLevelTerm_superSplice(arg0) {
+    // todo, use another type of token
+    const t = createToken(this, OhmAST.Type.Seq)
+    t.terms = []
+    return t
   },
   TopLevelTerm(seq) {
     return seq.toAST(astMapping)

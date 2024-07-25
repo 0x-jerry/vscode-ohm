@@ -18,7 +18,9 @@ import {
   type DocumentSymbolProvider,
   DocumentSymbol,
   SymbolInformation,
-  SymbolKind
+  SymbolKind,
+  type RenameProvider,
+  WorkspaceEdit
 } from 'vscode'
 import { parseAST, type OhmAST } from './ast'
 
@@ -40,7 +42,11 @@ interface LocationRule extends OhmAST.Tokens.Rule {
 
 export class OhmLanguage
   extends DisposableImpl
-  implements DefinitionProvider, HoverProvider, DocumentSymbolProvider
+  implements
+    DefinitionProvider,
+    HoverProvider,
+    DocumentSymbolProvider,
+    RenameProvider
 {
   langSelector = 'ohm'
 
@@ -57,6 +63,7 @@ export class OhmLanguage
     this.subscribe(
       languages.registerDocumentSymbolProvider(this.langSelector, this)
     )
+    this.subscribe(languages.registerRenameProvider(this.langSelector, this))
 
     const currentDoc = window.activeTextEditor?.document
 
@@ -89,6 +96,59 @@ export class OhmLanguage
     )
   }
 
+  provideRenameEdits(
+    document: TextDocument,
+    position: Position,
+    newName: string,
+    token: CancellationToken
+  ): ProviderResult<WorkspaceEdit> {
+    const wordRange = document.getWordRangeAtPosition(position)
+    const word = document.getText(wordRange)
+
+    const uri = document.uri
+    const ast = this._astMap.get(uri.toString())!
+
+    const edit = new WorkspaceEdit()
+
+    ast.grammars.forEach((grammar) => {
+      grammar.rules.forEach((rule) => {
+        if (rule.name._source === word) {
+          const range = locationToRange(rule.name)
+          edit.replace(uri, range, newName)
+        }
+
+        rule.body.forEach((seq) => {
+          seq.terms.forEach((term) => {
+            if (term.ident?._source === word) {
+              const range = locationToRange(term.ident)
+              edit.replace(uri, range, newName)
+            }
+          })
+        })
+      })
+    })
+
+    return edit
+  }
+
+  prepareRename(
+    document: TextDocument,
+    position: Position,
+    token: CancellationToken
+  ): ProviderResult<Range | { range: Range; placeholder: string }> {
+    const wordRange = document.getWordRangeAtPosition(position)
+    const word = document.getText(wordRange)
+
+    const uri = document.uri
+    const ast = this._astMap.get(uri.toString())!
+
+    const hasRule = ast.grammars.some((g) =>
+      g.rules.some((r) => r.name._source === word)
+    )
+
+    return hasRule ? wordRange : null
+  }
+
   provideDocumentSymbols(
     document: TextDocument,
     token: CancellationToken
@@ -104,7 +164,7 @@ export class OhmLanguage
         const s = new SymbolInformation(
           rule.name._source,
           SymbolKind.Interface,
-          rule.root.ident._source || 'root',
+          rule.root?.ident._source || 'root',
           new Location(uri, locationToRange(rule.name))
         )
 
