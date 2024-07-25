@@ -8,6 +8,8 @@ Unofficial [ohm-js] language support for vscode
 - Jump to definition
 - Hover to show definition source
 - Provide rule symbols
+- Rename rule symbols
+- Provide rule completion
 
 ## Super Grammar Reference
 
