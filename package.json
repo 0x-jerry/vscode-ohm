@@ -2,7 +2,7 @@
   "name": "vscode-ohm",
   "displayName": "Ohm-JS Language",
   "description": "Unofficial ohm-js language support for vscode",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "MIT",
   "author": {
     "name": "Jerry wang",
