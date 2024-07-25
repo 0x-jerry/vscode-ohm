@@ -25,9 +25,11 @@ import {
   CompletionItem,
   CompletionList,
   type CompletionContext,
-  CompletionItemKind
+  CompletionItemKind,
+  type CompletionItemLabel
 } from 'vscode'
 import { parseAST, type OhmAST } from './ast'
+import { builtinRules } from './builtin'
 
 export class DisposableImpl implements Disposable {
   _subscribers = new Set<Disposable>()
@@ -70,7 +72,9 @@ export class OhmLanguage
       languages.registerDocumentSymbolProvider(this.langSelector, this)
     )
     this.subscribe(languages.registerRenameProvider(this.langSelector, this))
-    this.subscribe(languages.registerCompletionItemProvider(this.langSelector, this))
+    this.subscribe(
+      languages.registerCompletionItemProvider(this.langSelector, this)
+    )
 
     const currentDoc = window.activeTextEditor?.document
 
@@ -112,21 +116,33 @@ export class OhmLanguage
     const uri = document.uri
     const ast = this._astMap.get(uri.toString())
     if (!ast) return
-    const wordRange = document.getWordRangeAtPosition(position)
-    const word = document.getText(wordRange)
 
     const completionItems: CompletionItem[] = []
 
     ast.grammars.forEach((g) => {
       g.rules.forEach((rule) => {
-        if (rule.name._source.startsWith(word)) {
-          const item = new CompletionItem(
-            rule.name._source,
-            CompletionItemKind.Interface
-          )
-          completionItems.push(item)
-        }
+        const item = new CompletionItem(
+          rule.name._source,
+          CompletionItemKind.Interface
+        )
+
+        item.documentation = document.getText(locationToRange(rule))
+        completionItems.push(item)
       })
+    })
+
+    builtinRules.forEach((ruleItem) => {
+      if (completionItems.find((n) => n.label === ruleItem.label)) {
+        return
+      }
+
+      const item = new CompletionItem(
+        ruleItem.label,
+        CompletionItemKind.Interface
+      )
+      item.documentation = ruleItem.documentation
+
+      completionItems.push(item)
     })
 
     return completionItems
