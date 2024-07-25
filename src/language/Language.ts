@@ -20,7 +20,12 @@ import {
   SymbolInformation,
   SymbolKind,
   type RenameProvider,
-  WorkspaceEdit
+  WorkspaceEdit,
+  type CompletionItemProvider,
+  CompletionItem,
+  CompletionList,
+  type CompletionContext,
+  CompletionItemKind
 } from 'vscode'
 import { parseAST, type OhmAST } from './ast'
 
@@ -46,7 +51,8 @@ export class OhmLanguage
     DefinitionProvider,
     HoverProvider,
     DocumentSymbolProvider,
-    RenameProvider
+    RenameProvider,
+    CompletionItemProvider
 {
   langSelector = 'ohm'
 
@@ -64,6 +70,7 @@ export class OhmLanguage
       languages.registerDocumentSymbolProvider(this.langSelector, this)
     )
     this.subscribe(languages.registerRenameProvider(this.langSelector, this))
+    this.subscribe(languages.registerCompletionItemProvider(this.langSelector, this))
 
     const currentDoc = window.activeTextEditor?.document
 
@@ -96,6 +103,35 @@ export class OhmLanguage
     )
   }
 
+  provideCompletionItems(
+    document: TextDocument,
+    position: Position,
+    token: CancellationToken,
+    context: CompletionContext
+  ): ProviderResult<CompletionItem[] | CompletionList<CompletionItem>> {
+    const uri = document.uri
+    const ast = this._astMap.get(uri.toString())
+    if (!ast) return
+    const wordRange = document.getWordRangeAtPosition(position)
+    const word = document.getText(wordRange)
+
+    const completionItems: CompletionItem[] = []
+
+    ast.grammars.forEach((g) => {
+      g.rules.forEach((rule) => {
+        if (rule.name._source.startsWith(word)) {
+          const item = new CompletionItem(
+            rule.name._source,
+            CompletionItemKind.Interface
+          )
+          completionItems.push(item)
+        }
+      })
+    })
+
+    return completionItems
+  }
+
   provideRenameEdits(
     document: TextDocument,
     position: Position,
@@ -106,7 +142,8 @@ export class OhmLanguage
     const word = document.getText(wordRange)
 
     const uri = document.uri
-    const ast = this._astMap.get(uri.toString())!
+    const ast = this._astMap.get(uri.toString())
+    if (!ast) return
 
     const edit = new WorkspaceEdit()
 
@@ -140,7 +177,8 @@ export class OhmLanguage
     const word = document.getText(wordRange)
 
     const uri = document.uri
-    const ast = this._astMap.get(uri.toString())!
+    const ast = this._astMap.get(uri.toString())
+    if (!ast) return
 
     const hasRule = ast.grammars.some((g) =>
       g.rules.some((r) => r.name._source === word)
