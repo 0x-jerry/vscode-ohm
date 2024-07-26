@@ -1,5 +1,5 @@
 import { type ExtensionContext } from 'vscode'
-import { OhmLanguage } from './language/Language'
+import { OhmLanguage } from './language/OhmLanguage'
 
 export async function activate(context: ExtensionContext) {
   console.log('activate')

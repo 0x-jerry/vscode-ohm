@@ -10,7 +10,7 @@ import {
   type TextDocument,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './Language'
+import type { OhmLanguage } from './OhmLanguage'
 
 export class DefinitionProviderImpl
   extends DisposableImpl

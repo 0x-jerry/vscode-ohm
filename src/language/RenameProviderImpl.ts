@@ -8,7 +8,7 @@ import {
   WorkspaceEdit,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './Language'
+import type { OhmLanguage } from './OhmLanguage'
 import { locationToRange } from './utils'
 
 export class RenameProviderImpl

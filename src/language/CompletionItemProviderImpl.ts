@@ -10,7 +10,7 @@ import {
   type CompletionContext,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './Language'
+import type { OhmLanguage } from './OhmLanguage'
 import { locationToRange } from './utils'
 
 interface BuiltinRule {

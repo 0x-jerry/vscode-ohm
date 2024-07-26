@@ -7,7 +7,7 @@ import {
   Hover,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './Language'
+import type { OhmLanguage } from './OhmLanguage'
 
 export class HoverProviderImpl extends DisposableImpl implements HoverProvider {
   constructor(readonly ohm: OhmLanguage) {
