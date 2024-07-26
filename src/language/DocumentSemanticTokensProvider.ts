@@ -6,25 +6,20 @@ import {
   SemanticTokens,
   SemanticTokensBuilder,
   SemanticTokensLegend,
-  EventEmitter,
+  EventEmitter
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
 import type { OhmLanguage } from './OhmLanguage'
 
 enum SemanticHighlight {
   class = 'class',
-  interface = 'interface',
+  interface = 'function',
   keyword = 'keyword',
-  operator = 'operator',
+  operator = 'operator'
 }
 
-const uniqueArr = <T>(arr: T[]) => [...new Set(arr)]
-
-const highlightValues = Object.values(SemanticHighlight)
-const tokenTypes = uniqueArr(highlightValues.map((n) => n[0]))
-const tokenModifiers = uniqueArr(
-  highlightValues.map((n) => n[1]).filter(Boolean),
-)
+const tokenTypes = Object.values(SemanticHighlight)
+const tokenModifiers: string[] = []
 
 const legend = new SemanticTokensLegend(tokenTypes, tokenModifiers)
 
@@ -38,13 +33,13 @@ export class DocumentSemanticTokensProviderImpl
     super()
   }
 
-  onDidchangeEmitter = new EventEmitter<void>()
+  onDidChangeEmitter = new EventEmitter<void>()
 
-  onDidChangeSemanticTokens = this.onDidchangeEmitter.event
+  onDidChangeSemanticTokens = this.onDidChangeEmitter.event
 
   provideDocumentSemanticTokens(
     document: TextDocument,
-    token: CancellationToken,
+    token: CancellationToken
   ): ProviderResult<SemanticTokens> {
     const grammar = this.ohm.getGrammar(document.uri)
 

@@ -28,7 +28,7 @@ export class OhmLanguage extends DisposableImpl {
     super()
 
     const lang = this.langSelector
-    const fetures = [
+    const features = [
       languages.registerHoverProvider(lang, new HoverProviderImpl(this)),
       languages.registerDefinitionProvider(
         lang,
@@ -53,7 +53,7 @@ export class OhmLanguage extends DisposableImpl {
       ),
     ]
 
-    fetures.forEach((disposiable) => this.subscribe(disposiable))
+    features.forEach((disposable) => this.subscribe(disposable))
 
     const currentDoc = window.activeTextEditor?.document
 
