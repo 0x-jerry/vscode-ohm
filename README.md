@@ -10,6 +10,7 @@ Unofficial [ohm-js] language support for vscode
 - Provide rule symbols
 - Rename rule symbols
 - Provide rule completion
+- Problem diagnostic
 
 ## Super Grammar Reference
 
