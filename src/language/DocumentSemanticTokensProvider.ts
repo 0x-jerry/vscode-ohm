@@ -11,8 +11,9 @@ import {
 import { DisposableImpl } from './DisposableImpl'
 import type { OhmLanguage } from './OhmLanguage'
 
+// https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide#standard-token-types-and-modifiers
 enum SemanticHighlight {
-  class = 'class',
+  class = 'namespace',
   interface = 'function',
   keyword = 'keyword',
   operator = 'operator'

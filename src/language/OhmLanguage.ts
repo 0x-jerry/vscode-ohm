@@ -52,11 +52,11 @@ export class OhmLanguage extends DisposableImpl {
         this.langSelector,
         new CompletionItemProviderImpl(this)
       ),
-      languages.registerDocumentSemanticTokensProvider(
-        this.langSelector,
-        new DocumentSemanticTokensProviderImpl(this),
-        DocumentSemanticTokensProviderImpl.legend
-      )
+      // languages.registerDocumentSemanticTokensProvider(
+      //   this.langSelector,
+      //   new DocumentSemanticTokensProviderImpl(this),
+      //   DocumentSemanticTokensProviderImpl.legend
+      // )
     ]
 
     this.subscribe(this.#diagnosticCollection)

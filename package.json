@@ -47,11 +47,13 @@
         "configuration": "./settings/ohm.language-configuration.json"
       }
     ],
-    "configurationDefaults": {
-      "[ohm]": {
-        "editor.semanticHighlighting.enabled": true
+    "grammars": [
+      {
+        "language": "ohm",
+        "scopeName": "source.ohm",
+        "path": "./settings/ohm.tmLanguage.json"
       }
-    }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "tsup",
