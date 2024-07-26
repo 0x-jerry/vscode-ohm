@@ -1,61 +1,17 @@
-import {
-  Disposable,
-  Position,
-  type CancellationToken,
-  type Definition,
-  Hover,
-  type DefinitionProvider,
-  type HoverProvider,
-  type LocationLink,
-  type ProviderResult,
-  type TextDocument,
-  languages,
-  workspace,
-  Uri,
-  Location,
-  Range,
-  window,
-  type DocumentSymbolProvider,
-  DocumentSymbol,
-  SymbolInformation,
-  SymbolKind,
-  type RenameProvider,
-  WorkspaceEdit,
-  type CompletionItemProvider,
-  CompletionItem,
-  CompletionList,
-  type CompletionContext,
-  CompletionItemKind,
-  type CompletionItemLabel
-} from 'vscode'
+import { type TextDocument, languages, workspace, Uri, window } from 'vscode'
 import { parseAST, type OhmAST } from './ast'
-import { builtinRules } from './builtin'
-
-export class DisposableImpl implements Disposable {
-  _subscribers = new Set<Disposable>()
-
-  subscribe(t: Disposable) {
-    this._subscribers.add(t)
-  }
-
-  dispose() {
-    this._subscribers.forEach((item) => item.dispose())
-  }
-}
+import { DisposableImpl } from './DisposableImpl'
+import { HoverProviderImpl } from './HoverPorviderImpl'
+import { DefinitionProviderImpl } from './DefinitionProviderImpl'
+import { DocumentSymbolProviderImpl } from './DocumentSymbolProviderImpl'
+import { RenameProviderImpl } from './RenameProviderImpl'
+import { CompletionItemProviderImpl } from './CompletionItemProviderImpl'
 
 interface LocationRule extends OhmAST.Tokens.Rule {
   uri: Uri
 }
 
-export class OhmLanguage
-  extends DisposableImpl
-  implements
-    DefinitionProvider,
-    HoverProvider,
-    DocumentSymbolProvider,
-    RenameProvider,
-    CompletionItemProvider
-{
+export class OhmLanguage extends DisposableImpl {
   langSelector = 'ohm'
 
   _astMap = new Map<string, OhmAST.Tokens.Grammars>()
@@ -63,18 +19,28 @@ export class OhmLanguage
   constructor() {
     super()
 
-    this.subscribe(languages.registerHoverProvider(this.langSelector, this))
-    this.subscribe(
-      languages.registerDefinitionProvider(this.langSelector, this)
-    )
+    const lang = this.langSelector
+    const fetures = [
+      languages.registerHoverProvider(lang, new HoverProviderImpl(this)),
+      languages.registerDefinitionProvider(
+        lang,
+        new DefinitionProviderImpl(this),
+      ),
+      languages.registerDocumentSymbolProvider(
+        this.langSelector,
+        new DocumentSymbolProviderImpl(this),
+      ),
+      languages.registerRenameProvider(
+        this.langSelector,
+        new RenameProviderImpl(this),
+      ),
+      languages.registerCompletionItemProvider(
+        this.langSelector,
+        new CompletionItemProviderImpl(this),
+      ),
+    ]
 
-    this.subscribe(
-      languages.registerDocumentSymbolProvider(this.langSelector, this)
-    )
-    this.subscribe(languages.registerRenameProvider(this.langSelector, this))
-    this.subscribe(
-      languages.registerCompletionItemProvider(this.langSelector, this)
-    )
+    fetures.forEach((disposiable) => this.subscribe(disposiable))
 
     const currentDoc = window.activeTextEditor?.document
 
@@ -85,7 +51,7 @@ export class OhmLanguage
     this.subscribe(
       workspace.onDidOpenTextDocument((doc) => {
         this._updateAST(doc)
-      })
+      }),
     )
 
     this.subscribe(
@@ -93,7 +59,7 @@ export class OhmLanguage
         const { document: doc, reason, contentChanges } = changeEvt
 
         this._updateAST(doc, true)
-      })
+      }),
     )
 
     this.subscribe(
@@ -103,130 +69,8 @@ export class OhmLanguage
 
           this._astMap.delete(item.toString())
         })
-      })
+      }),
     )
-  }
-
-  provideCompletionItems(
-    document: TextDocument,
-    position: Position,
-    token: CancellationToken,
-    context: CompletionContext
-  ): ProviderResult<CompletionItem[] | CompletionList<CompletionItem>> {
-    const uri = document.uri
-    const ast = this._astMap.get(uri.toString())
-    if (!ast) return
-
-    const completionItems: CompletionItem[] = []
-
-    ast.grammars.forEach((g) => {
-      g.rules.forEach((rule) => {
-        const item = new CompletionItem(
-          rule.name._source,
-          CompletionItemKind.Interface
-        )
-
-        item.documentation = document.getText(locationToRange(rule))
-        completionItems.push(item)
-      })
-    })
-
-    builtinRules.forEach((ruleItem) => {
-      if (completionItems.find((n) => n.label === ruleItem.label)) {
-        return
-      }
-
-      const item = new CompletionItem(
-        ruleItem.label,
-        CompletionItemKind.Interface
-      )
-      item.documentation = ruleItem.documentation
-
-      completionItems.push(item)
-    })
-
-    return completionItems
-  }
-
-  provideRenameEdits(
-    document: TextDocument,
-    position: Position,
-    newName: string,
-    token: CancellationToken
-  ): ProviderResult<WorkspaceEdit> {
-    const wordRange = document.getWordRangeAtPosition(position)
-    const word = document.getText(wordRange)
-
-    const uri = document.uri
-    const ast = this._astMap.get(uri.toString())
-    if (!ast) return
-
-    const edit = new WorkspaceEdit()
-
-    ast.grammars.forEach((grammar) => {
-      grammar.rules.forEach((rule) => {
-        if (rule.name._source === word) {
-          const range = locationToRange(rule.name)
-          edit.replace(uri, range, newName)
-        }
-
-        rule.body.forEach((seq) => {
-          seq.terms.forEach((term) => {
-            if (term.ident?._source === word) {
-              const range = locationToRange(term.ident)
-              edit.replace(uri, range, newName)
-            }
-          })
-        })
-      })
-    })
-
-    return edit
-  }
-
-  prepareRename(
-    document: TextDocument,
-    position: Position,
-    token: CancellationToken
-  ): ProviderResult<Range | { range: Range; placeholder: string }> {
-    const wordRange = document.getWordRangeAtPosition(position)
-    const word = document.getText(wordRange)
-
-    const uri = document.uri
-    const ast = this._astMap.get(uri.toString())
-    if (!ast) return
-
-    const hasRule = ast.grammars.some((g) =>
-      g.rules.some((r) => r.name._source === word)
-    )
-
-    return hasRule ? wordRange : null
-  }
-
-  provideDocumentSymbols(
-    document: TextDocument,
-    token: CancellationToken
-  ): ProviderResult<SymbolInformation[] | DocumentSymbol[]> {
-    const uri = document.uri
-    const ast = this._astMap.get(uri.toString())
-    if (!ast) return
-
-    const symbols: SymbolInformation[] = []
-
-    ast.grammars.forEach((g) => {
-      g.rules.forEach((rule) => {
-        const s = new SymbolInformation(
-          rule.name._source,
-          SymbolKind.Interface,
-          rule.root?.ident._source || 'root',
-          new Location(uri, locationToRange(rule.name))
-        )
-
-        symbols.push(s)
-      })
-    })
-
-    return symbols
   }
 
   _isOhmLang(uri: Uri) {
@@ -258,7 +102,7 @@ export class OhmLanguage
     if (!ast) return
 
     const paths = this._resolverSuperGrammars(ast).map((p) =>
-      Uri.joinPath(uri, '..', p)
+      Uri.joinPath(uri, '..', p),
     )
 
     for (const refPath of paths) {
@@ -292,14 +136,14 @@ export class OhmLanguage
         if (r.name._source === word) {
           rules.push({
             ...r,
-            uri
+            uri,
           })
         }
       })
     })
 
     const paths = Object.values(ast.ref).map((item) =>
-      Uri.joinPath(uri, '..', item)
+      Uri.joinPath(uri, '..', item),
     )
 
     for (const p of paths) {
@@ -310,74 +154,4 @@ export class OhmLanguage
 
     return rules
   }
-
-  provideDefinition(
-    doc: TextDocument,
-    position: Position,
-    token: CancellationToken
-  ): ProviderResult<Definition | LocationLink[]> {
-    const wordRange = doc.getWordRangeAtPosition(position, /[\w\d_]+/)
-    const word = doc.getText(wordRange)
-
-    if (!word) {
-      return
-    }
-
-    const rules = this._getRules(doc.uri, word) || []
-
-    return rules.map((item) => {
-      const start = new Position(
-        item.location.lineNum - 1,
-        item.location.colNum - 1
-      )
-      const end = new Position(
-        item.location.lineNum - 1,
-        item.location.colNum - 1 + item.name._source.length
-      )
-
-      const d = new Location(item.uri, new Range(start, end))
-      return d
-    })
-  }
-
-  provideHover(
-    doc: TextDocument,
-    position: Position,
-    token: CancellationToken
-  ): ProviderResult<Hover> {
-    const wordRange = doc.getWordRangeAtPosition(position, /[\w\d_]+/)
-    const word = doc.getText(wordRange)
-
-    if (!word) {
-      return
-    }
-
-    const rules = this._getRules(doc.uri, word) || []
-
-    const rule = rules.at(0)
-
-    if (!rule) return
-
-    const desc = rule._source
-
-    const ns = rule.root?.ident._source || '_'
-
-    const mdStr = ['```ohm', `${ns} {`, '  ' + desc, '}', '```'].join('\n')
-
-    return new Hover(mdStr)
-  }
-}
-
-function locationToRange(token: OhmAST.Token): Range {
-  const start = new Position(
-    token.location.lineNum - 1,
-    token.location.colNum - 1
-  )
-
-  const end = new Position(
-    token.location.lineNum - 1,
-    token.location.colNum - 1 + token._source.length
-  )
-
-  return new Range(start, end)
 }
