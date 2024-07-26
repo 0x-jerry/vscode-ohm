@@ -1,4 +1,11 @@
-import { type TextDocument, languages, workspace, Uri, window } from 'vscode'
+import {
+  type TextDocument,
+  languages,
+  workspace,
+  Uri,
+  window,
+  SemanticTokensLegend,
+} from 'vscode'
 import { parseAST, type OhmAST } from './ast'
 import { DisposableImpl } from './DisposableImpl'
 import { HoverProviderImpl } from './HoverPorviderImpl'
@@ -6,6 +13,7 @@ import { DefinitionProviderImpl } from './DefinitionProviderImpl'
 import { DocumentSymbolProviderImpl } from './DocumentSymbolProviderImpl'
 import { RenameProviderImpl } from './RenameProviderImpl'
 import { CompletionItemProviderImpl } from './CompletionItemProviderImpl'
+import { DocumentSemanticTokensProviderImpl } from './DocumentSemanticTokensProvider'
 
 export interface LocationRule extends OhmAST.Tokens.Rule {
   uri: Uri
@@ -37,6 +45,11 @@ export class OhmLanguage extends DisposableImpl {
       languages.registerCompletionItemProvider(
         this.langSelector,
         new CompletionItemProviderImpl(this),
+      ),
+      languages.registerDocumentSemanticTokensProvider(
+        this.langSelector,
+        new DocumentSemanticTokensProviderImpl(this),
+        DocumentSemanticTokensProviderImpl.legend,
       ),
     ]
 

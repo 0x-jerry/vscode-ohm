@@ -53,7 +53,12 @@
         "scopeName": "source.ohm",
         "path": "./settings/ohm.tmLanguage.json"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "[ohm]": {
+        "editor.semanticHighlighting.enabled": true
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "tsup",
