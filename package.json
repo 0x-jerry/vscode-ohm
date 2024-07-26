@@ -47,13 +47,6 @@
         "configuration": "./settings/ohm.language-configuration.json"
       }
     ],
-    "grammars": [
-      {
-        "language": "ohm",
-        "scopeName": "source.ohm",
-        "path": "./settings/ohm.tmLanguage.json"
-      }
-    ],
     "configurationDefaults": {
       "[ohm]": {
         "editor.semanticHighlighting.enabled": true
