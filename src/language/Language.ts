@@ -129,10 +129,6 @@ export class OhmLanguage extends DisposableImpl {
     return this.#astMap.get(uri.toString())
   }
 
-  getRules(uri: Uri, word: string) {
-    return this.filterRules(uri, (rule) => rule.name._source === word)
-  }
-
   filterRules(uri: Uri, predict?: (rule: LocationRule) => boolean) {
     const ast = this.#astMap.get(uri.toString())
     if (!ast) return []
