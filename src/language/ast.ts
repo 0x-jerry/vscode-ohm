@@ -116,7 +116,7 @@ export namespace OhmAST {
 
 export function getNodeRange(node: Interval): Range {
   const location = node.getLineAndColumn()
-  const source = node.sourceString
+  const source = node.contents
 
   const start = new Position(location.lineNum - 1, location.colNum - 1)
 
