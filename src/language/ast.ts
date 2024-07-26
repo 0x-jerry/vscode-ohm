@@ -3,7 +3,7 @@ import {
   ohmGrammar,
   type Interval,
   type LineAndColumnInfo,
-  type Node,
+  type Node
 } from 'ohm-js'
 import type { OhmActionDict } from '../grammar/ohm-grammar.ohm-bundle'
 import { Position, Range } from 'vscode'
@@ -42,7 +42,7 @@ export namespace OhmAST {
     tokens,
     token,
     operator,
-    punctuation,
+    punctuation
   }
 
   export interface Location extends LineAndColumnInfo {}
@@ -114,15 +114,15 @@ export namespace OhmAST {
 
 //  ----------
 
-function getNodeRange(node: Node): Range {
-  const location = node.source.getLineAndColumn()
+export function getNodeRange(node: Interval): Range {
+  const location = node.getLineAndColumn()
   const source = node.sourceString
 
   const start = new Position(location.lineNum - 1, location.colNum - 1)
 
   const end = new Position(
     location.lineNum - 1,
-    location.colNum - 1 + source.length,
+    location.colNum - 1 + source.length
   )
 
   return new Range(start, end)
@@ -130,12 +130,12 @@ function getNodeRange(node: Node): Range {
 
 function createToken<T extends OhmAST.Type>(
   t: Node,
-  type: T,
+  type: T
 ): OhmAST.Tokens.GetTokenByType<T> {
   const _t: OhmAST.Token = {
     type,
-    range: getNodeRange(t),
-    _source: t.sourceString,
+    range: getNodeRange(t.source),
+    _source: t.sourceString
   }
 
   return _t as any
@@ -159,13 +159,13 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
     const t = createToken(this, OhmAST.Type.Grammar)
 
     const ctx: GrammarContext = {
-      root: t,
+      root: t
     }
 
     t.ident = name.toAST({})
 
     t.rules = rules.toAST({
-      grammar: ctx,
+      grammar: ctx
     })
 
     t.super = _super.toAST({})
@@ -296,7 +296,7 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
   },
   ident(name) {
     return createToken(this, OhmAST.Type.ident)
-  },
+  }
 }
 
 interface GrammarContext {
@@ -312,28 +312,27 @@ function getParameters(node: Node) {
 }
 
 const REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/gm
+const SINGLE_REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/
 
 export function parseAST(s: string) {
-  try {
-    const t = ohmGrammar.match(s)
-
-    const ast = toAST(t, astMapping) as OhmAST.Tokens.Grammars
-
-    const refResults = s.match(REF_RE)
-
-    if (refResults) {
-      refResults.forEach((item) => {
-        const SINGLE_REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/
-        const r = item.match(SINGLE_REF_RE)
-        if (r?.groups) {
-          const { name, path } = r.groups
-          ast.ref[name] = path
-        }
-      })
-    }
-
-    return ast
-  } catch (error) {
-    console.error(error)
+  const result = ohmGrammar.match(s)
+  if (result.failed()) {
+    throw result
   }
+
+  const ast = toAST(result, astMapping) as OhmAST.Tokens.Grammars
+
+  const refResults = s.match(REF_RE)
+
+  if (refResults) {
+    refResults.forEach((item) => {
+      const r = item.match(SINGLE_REF_RE)
+      if (r?.groups) {
+        const { name, path } = r.groups
+        ast.ref[name] = path
+      }
+    })
+  }
+
+  return ast
 }

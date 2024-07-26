@@ -5,8 +5,10 @@ import {
   Uri,
   window,
   SemanticTokensLegend,
+  Diagnostic,
+  DiagnosticSeverity
 } from 'vscode'
-import { parseAST, type OhmAST } from './ast'
+import { getNodeRange, parseAST, type OhmAST } from './ast'
 import { DisposableImpl } from './DisposableImpl'
 import { HoverProviderImpl } from './HoverPorviderImpl'
 import { DefinitionProviderImpl } from './DefinitionProviderImpl'
@@ -14,6 +16,7 @@ import { DocumentSymbolProviderImpl } from './DocumentSymbolProviderImpl'
 import { RenameProviderImpl } from './RenameProviderImpl'
 import { CompletionItemProviderImpl } from './CompletionItemProviderImpl'
 import { DocumentSemanticTokensProviderImpl } from './DocumentSemanticTokensProvider'
+import type { MatchResult } from 'ohm-js'
 
 export interface LocationRule extends OhmAST.Tokens.Rule {
   uri: Uri
@@ -24,6 +27,9 @@ export class OhmLanguage extends DisposableImpl {
 
   #astMap = new Map<string, OhmAST.Tokens.Grammars>()
 
+  #diagnosticCollection = languages.createDiagnosticCollection(
+    this.langSelector
+  )
   constructor() {
     super()
 
@@ -32,26 +38,28 @@ export class OhmLanguage extends DisposableImpl {
       languages.registerHoverProvider(lang, new HoverProviderImpl(this)),
       languages.registerDefinitionProvider(
         lang,
-        new DefinitionProviderImpl(this),
+        new DefinitionProviderImpl(this)
       ),
       languages.registerDocumentSymbolProvider(
         this.langSelector,
-        new DocumentSymbolProviderImpl(this),
+        new DocumentSymbolProviderImpl(this)
       ),
       languages.registerRenameProvider(
         this.langSelector,
-        new RenameProviderImpl(this),
+        new RenameProviderImpl(this)
       ),
       languages.registerCompletionItemProvider(
         this.langSelector,
-        new CompletionItemProviderImpl(this),
+        new CompletionItemProviderImpl(this)
       ),
       languages.registerDocumentSemanticTokensProvider(
         this.langSelector,
         new DocumentSemanticTokensProviderImpl(this),
-        DocumentSemanticTokensProviderImpl.legend,
-      ),
+        DocumentSemanticTokensProviderImpl.legend
+      )
     ]
+
+    this.subscribe(this.#diagnosticCollection)
 
     features.forEach((disposable) => this.subscribe(disposable))
 
@@ -64,7 +72,7 @@ export class OhmLanguage extends DisposableImpl {
     this.subscribe(
       workspace.onDidOpenTextDocument((doc) => {
         this.#updateAST(doc)
-      }),
+      })
     )
 
     this.subscribe(
@@ -72,7 +80,7 @@ export class OhmLanguage extends DisposableImpl {
         const { document: doc, reason, contentChanges } = changeEvt
 
         this.#updateAST(doc, true)
-      }),
+      })
     )
 
     this.subscribe(
@@ -82,7 +90,7 @@ export class OhmLanguage extends DisposableImpl {
 
           this.#astMap.delete(item.toString())
         })
-      }),
+      })
     )
   }
 
@@ -94,15 +102,28 @@ export class OhmLanguage extends DisposableImpl {
     const uriString = uri.toString()
     if (!force && this.#astMap.has(uriString)) return
 
-    const ast = parseAST(content)
+    try {
+      const ast = parseAST(content)
 
-    if (!ast) {
-      return
+      this.#diagnosticCollection.delete(uri)
+      this.#astMap.set(uriString, ast)
+      return ast
+    } catch (error) {
+      const err = error as MatchResult
+      if (err.failed?.()) {
+        const info = err.getInterval()
+
+        const range = getNodeRange(info)
+
+        const diagnostic = new Diagnostic(
+          range,
+          err.shortMessage || err.message || 'Unknown error',
+          DiagnosticSeverity.Error
+        )
+
+        this.#diagnosticCollection.set(uri, [diagnostic])
+      }
     }
-
-    this.#astMap.set(uriString, ast)
-
-    return ast
   }
 
   async #updateAST(doc: TextDocument, force = false) {
@@ -115,7 +136,7 @@ export class OhmLanguage extends DisposableImpl {
     if (!ast) return
 
     const paths = this.#resolverSuperGrammars(ast).map((p) =>
-      Uri.joinPath(uri, '..', p),
+      Uri.joinPath(uri, '..', p)
     )
 
     for (const refPath of paths) {
@@ -152,7 +173,7 @@ export class OhmLanguage extends DisposableImpl {
       grammar.rules.forEach((rule) => {
         const _rule: LocationRule = {
           ...rule,
-          uri,
+          uri
         }
 
         if (!predict || predict(_rule)) {
@@ -162,7 +183,7 @@ export class OhmLanguage extends DisposableImpl {
     })
 
     const paths = Object.values(ast.ref).map((item) =>
-      Uri.joinPath(uri, '..', item),
+      Uri.joinPath(uri, '..', item)
     )
 
     for (const ohmFilePath of paths) {
