@@ -26,7 +26,7 @@ export class DefinitionProviderImpl
     token: CancellationToken,
   ): ProviderResult<Definition | DefinitionLink[]> {
     const doc = document
-    const wordRange = doc.getWordRangeAtPosition(position, /[\w\d_]+/)
+    const wordRange = doc.getWordRangeAtPosition(position)
     const word = doc.getText(wordRange)
 
     if (!word) {

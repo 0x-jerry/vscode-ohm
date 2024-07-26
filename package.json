@@ -44,7 +44,7 @@
         "extensions": [
           ".ohm"
         ],
-        "configuration": "./settings/language-configuration.json"
+        "configuration": "./settings/ohm.language-configuration.json"
       }
     ],
     "grammars": [

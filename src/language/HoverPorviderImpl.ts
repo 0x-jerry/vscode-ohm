@@ -19,7 +19,7 @@ export class HoverProviderImpl extends DisposableImpl implements HoverProvider {
     position: Position,
     token: CancellationToken,
   ): ProviderResult<Hover> {
-    const wordRange = doc.getWordRangeAtPosition(position, /[\w\d_]+/)
+    const wordRange = doc.getWordRangeAtPosition(position)
     const word = doc.getText(wordRange)
 
     if (!word) {
