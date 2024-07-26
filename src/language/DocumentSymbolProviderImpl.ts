@@ -10,7 +10,6 @@ import {
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
 import type { OhmLanguage } from './OhmLanguage'
-import { locationToRange } from './utils'
 
 export class DocumentSymbolProviderImpl
   extends DisposableImpl
@@ -32,7 +31,7 @@ export class DocumentSymbolProviderImpl
         rule.name._source,
         SymbolKind.Interface,
         rule.root?.ident._source || 'root',
-        new Location(rule.uri, locationToRange(rule.name)),
+        new Location(rule.uri, rule.name.range),
       )
 
       symbols.push(s)

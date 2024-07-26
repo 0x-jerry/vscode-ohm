@@ -3,9 +3,10 @@ import {
   ohmGrammar,
   type Interval,
   type LineAndColumnInfo,
-  type Node
+  type Node,
 } from 'ohm-js'
 import type { OhmActionDict } from '../grammar/ohm-grammar.ohm-bundle'
+import { Position, Range } from 'vscode'
 
 export namespace OhmAST {
   export enum Type {
@@ -41,14 +42,14 @@ export namespace OhmAST {
     tokens,
     token,
     operator,
-    punctuation
+    punctuation,
   }
 
   export interface Location extends LineAndColumnInfo {}
 
   export interface Token {
     type: Type
-    location: Location
+    range: Range
     _source: string
   }
 
@@ -113,20 +114,28 @@ export namespace OhmAST {
 
 //  ----------
 
-function nodeLocationInfo(source: Interval) {
-  const info = source.getLineAndColumn()
+function getNodeRange(node: Node): Range {
+  const location = node.source.getLineAndColumn()
+  const source = node.sourceString
 
-  return info
+  const start = new Position(location.lineNum - 1, location.colNum - 1)
+
+  const end = new Position(
+    location.lineNum - 1,
+    location.colNum - 1 + source.length,
+  )
+
+  return new Range(start, end)
 }
 
 function createToken<T extends OhmAST.Type>(
   t: Node,
-  type: T
+  type: T,
 ): OhmAST.Tokens.GetTokenByType<T> {
   const _t: OhmAST.Token = {
     type,
-    location: nodeLocationInfo(t.source),
-    _source: t.sourceString
+    range: getNodeRange(t),
+    _source: t.sourceString,
   }
 
   return _t as any
@@ -150,13 +159,13 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
     const t = createToken(this, OhmAST.Type.Grammar)
 
     const ctx: GrammarContext = {
-      root: t
+      root: t,
     }
 
     t.ident = name.toAST({})
 
     t.rules = rules.toAST({
-      grammar: ctx
+      grammar: ctx,
     })
 
     t.super = _super.toAST({})
@@ -287,7 +296,7 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
   },
   ident(name) {
     return createToken(this, OhmAST.Type.ident)
-  }
+  },
 }
 
 interface GrammarContext {

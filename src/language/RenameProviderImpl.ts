@@ -9,7 +9,6 @@ import {
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
 import type { OhmLanguage } from './OhmLanguage'
-import { locationToRange } from './utils'
 
 export class RenameProviderImpl
   extends DisposableImpl
@@ -32,14 +31,14 @@ export class RenameProviderImpl
 
     this.ohm.filterRules(document.uri, (rule) => {
       if (rule.name._source === word) {
-        const range = locationToRange(rule.name)
+        const range = rule.name.range
         edit.replace(rule.uri, range, newName)
       }
 
       rule.body.forEach((seq) => {
         seq.terms.forEach((term) => {
           if (term.ident?._source === word) {
-            const range = locationToRange(term.ident)
+            const range = term.ident.range
             edit.replace(rule.uri, range, newName)
           }
         })

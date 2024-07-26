@@ -40,12 +40,12 @@ export class DefinitionProviderImpl
 
     return rules.map((item) => {
       const start = new Position(
-        item.location.lineNum - 1,
-        item.location.colNum - 1,
+        item.range.lineNum - 1,
+        item.range.colNum - 1,
       )
       const end = new Position(
-        item.location.lineNum - 1,
-        item.location.colNum - 1 + item.name._source.length,
+        item.range.lineNum - 1,
+        item.range.colNum - 1 + item.name._source.length,
       )
 
       const d = new Location(item.uri, new Range(start, end))

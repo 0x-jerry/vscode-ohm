@@ -11,7 +11,6 @@ import {
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
 import type { OhmLanguage } from './OhmLanguage'
-import { locationToRange } from './utils'
 
 interface BuiltinRule {
   label: string
@@ -111,7 +110,7 @@ export class CompletionItemProviderImpl
         CompletionItemKind.Interface,
       )
 
-      item.documentation = document.getText(locationToRange(rule))
+      item.documentation = document.getText(rule.range)
       completionItems.push(item)
     })
 
