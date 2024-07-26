@@ -28,28 +28,24 @@ export class RenameProviderImpl
     const wordRange = document.getWordRangeAtPosition(position)
     const word = document.getText(wordRange)
 
-    const uri = document.uri
-    const ast = this.ohm.getGrammar(uri)
-    if (!ast) return
-
     const edit = new WorkspaceEdit()
 
-    ast.grammars.forEach((grammar) => {
-      grammar.rules.forEach((rule) => {
-        if (rule.name._source === word) {
-          const range = locationToRange(rule.name)
-          edit.replace(uri, range, newName)
-        }
+    this.ohm.filterRules(document.uri, (rule) => {
+      if (rule.name._source === word) {
+        const range = locationToRange(rule.name)
+        edit.replace(rule.uri, range, newName)
+      }
 
-        rule.body.forEach((seq) => {
-          seq.terms.forEach((term) => {
-            if (term.ident?._source === word) {
-              const range = locationToRange(term.ident)
-              edit.replace(uri, range, newName)
-            }
-          })
+      rule.body.forEach((seq) => {
+        seq.terms.forEach((term) => {
+          if (term.ident?._source === word) {
+            const range = locationToRange(term.ident)
+            edit.replace(rule.uri, range, newName)
+          }
         })
       })
+
+      return true
     })
 
     return edit
@@ -67,9 +63,9 @@ export class RenameProviderImpl
     const ast = this.ohm.getGrammar(uri)
     if (!ast) return
 
-    const hasRule = ast.grammars.some((g) =>
-      g.rules.some((r) => r.name._source === word),
-    )
+    const hasRule =
+      this.ohm.filterRules(document.uri, (rule) => rule.name._source === word)
+        .length > 0
 
     return hasRule ? wordRange : null
   }

@@ -7,7 +7,7 @@ import { DocumentSymbolProviderImpl } from './DocumentSymbolProviderImpl'
 import { RenameProviderImpl } from './RenameProviderImpl'
 import { CompletionItemProviderImpl } from './CompletionItemProviderImpl'
 
-interface LocationRule extends OhmAST.Tokens.Rule {
+export interface LocationRule extends OhmAST.Tokens.Rule {
   uri: Uri
 }
 
@@ -130,18 +130,24 @@ export class OhmLanguage extends DisposableImpl {
   }
 
   getRules(uri: Uri, word: string) {
+    return this.filterRules(uri, (rule) => rule.name._source === word)
+  }
+
+  filterRules(uri: Uri, predict?: (rule: LocationRule) => boolean) {
     const ast = this.#astMap.get(uri.toString())
-    if (!ast) return
+    if (!ast) return []
 
     const rules: LocationRule[] = []
 
-    ast.grammars.forEach((g) => {
-      g.rules.forEach((r) => {
-        if (r.name._source === word) {
-          rules.push({
-            ...r,
-            uri,
-          })
+    ast.grammars.forEach((grammar) => {
+      grammar.rules.forEach((rule) => {
+        const _rule: LocationRule = {
+          ...rule,
+          uri,
+        }
+
+        if (!predict || predict(_rule)) {
+          rules.push(_rule)
         }
       })
     })
@@ -150,10 +156,10 @@ export class OhmLanguage extends DisposableImpl {
       Uri.joinPath(uri, '..', item),
     )
 
-    for (const p of paths) {
-      const _rules = this.getRules(p, word)
+    for (const ohmFilePath of paths) {
+      const superGrammarRules = this.filterRules(ohmFilePath, predict)
 
-      if (_rules) rules.push(..._rules)
+      if (superGrammarRules) rules.push(...superGrammarRules)
     }
 
     return rules

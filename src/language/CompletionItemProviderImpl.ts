@@ -101,22 +101,18 @@ export class CompletionItemProviderImpl
     token: CancellationToken,
     context: CompletionContext,
   ): ProviderResult<CompletionItem[] | CompletionList<CompletionItem>> {
-    const uri = document.uri
-    const ast = this.ohm.getGrammar(uri)
-    if (!ast) return
-
     const completionItems: CompletionItem[] = []
 
-    ast.grammars.forEach((g) => {
-      g.rules.forEach((rule) => {
-        const item = new CompletionItem(
-          rule.name._source,
-          CompletionItemKind.Interface,
-        )
+    const allRules = this.ohm.filterRules(document.uri)
 
-        item.documentation = document.getText(locationToRange(rule))
-        completionItems.push(item)
-      })
+    allRules.forEach((rule) => {
+      const item = new CompletionItem(
+        rule.name._source,
+        CompletionItemKind.Interface,
+      )
+
+      item.documentation = document.getText(locationToRange(rule))
+      completionItems.push(item)
     })
 
     builtinRules.forEach((ruleItem) => {
