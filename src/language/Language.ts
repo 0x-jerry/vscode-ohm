@@ -14,7 +14,7 @@ interface LocationRule extends OhmAST.Tokens.Rule {
 export class OhmLanguage extends DisposableImpl {
   langSelector = 'ohm'
 
-  _astMap = new Map<string, OhmAST.Tokens.Grammars>()
+  #astMap = new Map<string, OhmAST.Tokens.Grammars>()
 
   constructor() {
     super()
@@ -45,12 +45,12 @@ export class OhmLanguage extends DisposableImpl {
     const currentDoc = window.activeTextEditor?.document
 
     if (currentDoc) {
-      this._updateAST(currentDoc)
+      this.#updateAST(currentDoc)
     }
 
     this.subscribe(
       workspace.onDidOpenTextDocument((doc) => {
-        this._updateAST(doc)
+        this.#updateAST(doc)
       }),
     )
 
@@ -58,28 +58,28 @@ export class OhmLanguage extends DisposableImpl {
       workspace.onDidChangeTextDocument((changeEvt) => {
         const { document: doc, reason, contentChanges } = changeEvt
 
-        this._updateAST(doc, true)
+        this.#updateAST(doc, true)
       }),
     )
 
     this.subscribe(
       workspace.onDidDeleteFiles((deleteEvt) => {
         deleteEvt.files.forEach((item) => {
-          if (!this._isOhmLang(item)) return
+          if (!this.#isOhmLang(item)) return
 
-          this._astMap.delete(item.toString())
+          this.#astMap.delete(item.toString())
         })
       }),
     )
   }
 
-  _isOhmLang(uri: Uri) {
+  #isOhmLang(uri: Uri) {
     return uri.path.endsWith('.ohm')
   }
 
-  _updateASTByContent(uri: Uri, content: string, force = false) {
+  #updateASTByContent(uri: Uri, content: string, force = false) {
     const uriString = uri.toString()
-    if (!force && this._astMap.has(uriString)) return
+    if (!force && this.#astMap.has(uriString)) return
 
     const ast = parseAST(content)
 
@@ -87,36 +87,36 @@ export class OhmLanguage extends DisposableImpl {
       return
     }
 
-    this._astMap.set(uriString, ast)
+    this.#astMap.set(uriString, ast)
 
     return ast
   }
 
-  async _updateAST(doc: TextDocument, force = false) {
+  async #updateAST(doc: TextDocument, force = false) {
     const uri = doc.uri
 
-    if (!this._isOhmLang(uri)) return
+    if (!this.#isOhmLang(uri)) return
 
-    const ast = this._updateASTByContent(uri, doc.getText(), force)
+    const ast = this.#updateASTByContent(uri, doc.getText(), force)
 
     if (!ast) return
 
-    const paths = this._resolverSuperGrammars(ast).map((p) =>
+    const paths = this.#resolverSuperGrammars(ast).map((p) =>
       Uri.joinPath(uri, '..', p),
     )
 
     for (const refPath of paths) {
-      if (this._astMap.has(refPath.toString())) {
+      if (this.#astMap.has(refPath.toString())) {
         continue
       }
 
       const content = await workspace.fs.readFile(refPath)
 
-      this._updateASTByContent(refPath, content.toString(), force)
+      this.#updateASTByContent(refPath, content.toString(), force)
     }
   }
 
-  _resolverSuperGrammars(ast: OhmAST.Tokens.Grammars) {
+  #resolverSuperGrammars(ast: OhmAST.Tokens.Grammars) {
     const refsPath = ast.grammars
       .filter((item) => item.super?.name != null)
       .map((item) => ast.ref[item.super!.name])
@@ -125,8 +125,12 @@ export class OhmLanguage extends DisposableImpl {
     return refsPath
   }
 
-  _getRules(uri: Uri, word: string) {
-    const ast = this._astMap.get(uri.toString())
+  getGrammar(uri: Uri) {
+    return this.#astMap.get(uri.toString())
+  }
+
+  getRules(uri: Uri, word: string) {
+    const ast = this.#astMap.get(uri.toString())
     if (!ast) return
 
     const rules: LocationRule[] = []
@@ -147,7 +151,7 @@ export class OhmLanguage extends DisposableImpl {
     )
 
     for (const p of paths) {
-      const _rules = this._getRules(p, word)
+      const _rules = this.getRules(p, word)
 
       if (_rules) rules.push(..._rules)
     }

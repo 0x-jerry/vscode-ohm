@@ -26,7 +26,7 @@ export class HoverProviderImpl extends DisposableImpl implements HoverProvider {
       return
     }
 
-    const rules = this.ohm._getRules(doc.uri, word) || []
+    const rules = this.ohm.getRules(doc.uri, word) || []
 
     const rule = rules.at(0)
 

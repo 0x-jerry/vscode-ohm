@@ -33,7 +33,7 @@ export class DefinitionProviderImpl
       return
     }
 
-    const rules = this.ohm._getRules(doc.uri, word) || []
+    const rules = this.ohm.getRules(doc.uri, word) || []
 
     return rules.map((item) => {
       const start = new Position(

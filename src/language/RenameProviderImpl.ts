@@ -29,7 +29,7 @@ export class RenameProviderImpl
     const word = document.getText(wordRange)
 
     const uri = document.uri
-    const ast = this.ohm._astMap.get(uri.toString())
+    const ast = this.ohm.getGrammar(uri)
     if (!ast) return
 
     const edit = new WorkspaceEdit()
@@ -64,7 +64,7 @@ export class RenameProviderImpl
     const word = document.getText(wordRange)
 
     const uri = document.uri
-    const ast = this.ohm._astMap.get(uri.toString())
+    const ast = this.ohm.getGrammar(uri)
     if (!ast) return
 
     const hasRule = ast.grammars.some((g) =>

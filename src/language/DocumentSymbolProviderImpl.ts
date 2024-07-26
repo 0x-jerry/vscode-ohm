@@ -25,7 +25,7 @@ export class DocumentSymbolProviderImpl
     token: CancellationToken,
   ): ProviderResult<SymbolInformation[] | DocumentSymbol[]> {
     const uri = document.uri
-    const ast = this.ohm._astMap.get(uri.toString())
+    const ast = this.ohm.getGrammar(uri)
     if (!ast) return
 
     const symbols: SymbolInformation[] = []

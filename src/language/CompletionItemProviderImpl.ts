@@ -102,7 +102,7 @@ export class CompletionItemProviderImpl
     context: CompletionContext,
   ): ProviderResult<CompletionItem[] | CompletionList<CompletionItem>> {
     const uri = document.uri
-    const ast = this.ohm._astMap.get(uri.toString())
+    const ast = this.ohm.getGrammar(uri)
     if (!ast) return
 
     const completionItems: CompletionItem[] = []
