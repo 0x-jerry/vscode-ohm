@@ -28,10 +28,10 @@ importers:
         version: 17.1.0
       tsup:
         specifier: ^8.2.3
-        version: 8.2.3(jiti@1.21.6)(tsx@4.16.2)(typescript@5.5.4)(yaml@2.5.0)
+        version: 8.2.3(jiti@1.21.6)(tsx@4.16.2)(typescript@5.6.2)(yaml@2.5.0)
       typescript:
         specifier: ^5.5.4
-        version: 5.5.4
+        version: 5.6.2
 
 packages:
 
@@ -1652,8 +1652,8 @@ packages:
   typed-rest-client@1.8.11:
     resolution: {integrity: sha512-5UvfMpd1oelmUPRbbaVnq+rHP7ng2cE4qoQkQeAqxRL6PklkxsM0g32/HL0yfvruK6ojQ5x8EE+HF4YV6DtuCA==}
 
-  typescript@5.5.4:
-    resolution: {integrity: sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q==}
+  typescript@5.6.2:
+    resolution: {integrity: sha512-NW8ByodCSNCwZeghjN3o+JX5OFH0Ojg6sadjEKY4huZ52TqbJTJnDo5+Tw98lSy63NZvi4n+ez5m2u5d4PkZyw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -3249,7 +3249,7 @@ snapshots:
 
   tslib@2.6.3: {}
 
-  tsup@8.2.3(jiti@1.21.6)(tsx@4.16.2)(typescript@5.5.4)(yaml@2.5.0):
+  tsup@8.2.3(jiti@1.21.6)(tsx@4.16.2)(typescript@5.6.2)(yaml@2.5.0):
     dependencies:
       bundle-require: 5.0.0(esbuild@0.23.0)
       cac: 6.7.14
@@ -3268,7 +3268,7 @@ snapshots:
       sucrase: 3.35.0
       tree-kill: 1.2.2
     optionalDependencies:
-      typescript: 5.5.4
+      typescript: 5.6.2
     transitivePeerDependencies:
       - jiti
       - supports-color
@@ -3295,7 +3295,7 @@ snapshots:
       tunnel: 0.0.6
       underscore: 1.13.7
 
-  typescript@5.5.4: {}
+  typescript@5.6.2: {}
 
   uc.micro@1.0.6: {}
 
