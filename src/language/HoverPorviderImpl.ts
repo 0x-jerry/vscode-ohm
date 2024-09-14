@@ -8,6 +8,7 @@ import {
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
 import type { OhmLanguage } from './OhmLanguage'
+import { builtinRules } from './ohm'
 
 export class HoverProviderImpl extends DisposableImpl implements HoverProvider {
   constructor(readonly ohm: OhmLanguage) {
@@ -31,16 +32,22 @@ export class HoverProviderImpl extends DisposableImpl implements HoverProvider {
       (rule) => rule.name._source === word,
     )
 
-    const rule = rules.at(0)
+    if (rules.length) {
+      const rule = rules.at(0)!
 
-    if (!rule) return
+      const desc = rule._source
 
-    const desc = rule._source
+      const ns = rule.root?.ident._source || '_'
 
-    const ns = rule.root?.ident._source || '_'
+      const mdStr = ['```ohm', `${ns} {`, '  ' + desc, '}', '```'].join('\n')
 
-    const mdStr = ['```ohm', `${ns} {`, '  ' + desc, '}', '```'].join('\n')
+      return new Hover(mdStr)
+    }
 
-    return new Hover(mdStr)
+    const builtinRule = builtinRules.find((n) => n.label === word)
+
+    if (builtinRule?.documentation) {
+      return new Hover(builtinRule.documentation)
+    }
   }
 }
