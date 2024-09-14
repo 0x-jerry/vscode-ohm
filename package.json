@@ -76,11 +76,11 @@
   "devDependencies": {
     "@0x-jerry/x-release": "^2.2.2",
     "@ohm-js/cli": "^2.0.0",
-    "@types/node": "^20.14.12",
+    "@types/node": "^22.5.5",
     "@types/vscode": "^1.60.0",
-    "@vscode/vsce": "^3.0.0",
+    "@vscode/vsce": "^3.1.0",
     "ohm-js": "^17.1.0",
-    "tsup": "^8.2.3",
-    "typescript": "^5.5.4"
+    "tsup": "^8.2.4",
+    "typescript": "^5.6.2"
   }
 }
