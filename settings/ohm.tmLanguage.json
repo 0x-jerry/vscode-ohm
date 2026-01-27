@@ -177,7 +177,7 @@
       },
       "built-ins": {
         "name": "support.class",
-        "match": "\\b(?:any|alnum|end|digit|hexDigit|letter|space|spaces|lower|upper|unicodeLtmo|ListOf|listOf|NonemptyListOf|EmptyListOf|nonemptyListOf|emptyListOf)\\b"
+        "match": "\\b(?:any|alnum|end|digit|hexDigit|letter|space|spaces|lower|upper|unicodeLtmo|ListOf|listOf|NonemptyListOf|EmptyListOf|nonemptyListOf|emptyListOf|applySyntactic|caseInsensitive)\\b"
       },
       "terminals": {
         "begin": "\"",

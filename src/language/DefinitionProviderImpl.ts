@@ -7,10 +7,13 @@ import {
   type DefinitionLink,
   type DefinitionProvider,
   type ProviderResult,
-  type TextDocument
+  type TextDocument,
+  Uri,
+  type LocationLink,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './OhmLanguage'
+import { toRange } from './utils'
+import type { OhmLanguage } from '../core/OhmLanguage'
 
 export class DefinitionProviderImpl
   extends DisposableImpl
@@ -20,11 +23,11 @@ export class DefinitionProviderImpl
     super()
   }
 
-  provideDefinition(
+  async provideDefinition(
     document: TextDocument,
     position: Position,
-    token: CancellationToken
-  ): ProviderResult<Definition | DefinitionLink[]> {
+    token: CancellationToken,
+  ): Promise<Definition | LocationLink[] | null | undefined> {
     const doc = document
     const wordRange = doc.getWordRangeAtPosition(position)
     const word = doc.getText(wordRange)
@@ -33,14 +36,13 @@ export class DefinitionProviderImpl
       return
     }
 
-    const rules = this.ohm.filterRules(
-      doc.uri,
-      (rule) => rule.name._source === word
-    )
+    const rules = await this.ohm.filterRules(doc.uri.toString(), {
+      includeRefs: true,
+      filter: (rule) => rule.name._source === word,
+    })
 
     return rules.map((item) => {
-      const d = new Location(item.uri, item.range)
-      return d
+      return new Location(Uri.parse(item.uri), toRange(item.range))
     })
   }
 }

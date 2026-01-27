@@ -7,19 +7,19 @@ import {
   Hover,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './OhmLanguage'
-import { builtinRules } from './ohm'
+import { builtinRules } from '../core/ohm'
+import type { OhmLanguage } from '../core/OhmLanguage'
 
 export class HoverProviderImpl extends DisposableImpl implements HoverProvider {
   constructor(readonly ohm: OhmLanguage) {
     super()
   }
 
-  provideHover(
+  async provideHover(
     doc: TextDocument,
     position: Position,
     token: CancellationToken,
-  ): ProviderResult<Hover> {
+  ): Promise<Hover | null | undefined> {
     const wordRange = doc.getWordRangeAtPosition(position)
     const word = doc.getText(wordRange)
 
@@ -27,10 +27,10 @@ export class HoverProviderImpl extends DisposableImpl implements HoverProvider {
       return
     }
 
-    const rules = this.ohm.filterRules(
-      doc.uri,
-      (rule) => rule.name._source === word,
-    )
+    const rules = await this.ohm.filterRules(doc.uri.toString(), {
+      includeRefs: true,
+      filter: (rule) => rule.name._source === word,
+    })
 
     if (rules.length) {
       const rule = rules.at(0)!

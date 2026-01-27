@@ -6,9 +6,11 @@ import {
   type RenameProvider,
   Range,
   WorkspaceEdit,
+  Uri,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './OhmLanguage'
+import { toRange } from './utils'
+import type { OhmLanguage } from '../core/OhmLanguage'
 
 export class RenameProviderImpl
   extends DisposableImpl
@@ -18,54 +20,58 @@ export class RenameProviderImpl
     super()
   }
 
-  provideRenameEdits(
+  async provideRenameEdits(
     document: TextDocument,
     position: Position,
     newName: string,
     token: CancellationToken,
-  ): ProviderResult<WorkspaceEdit> {
+  ): Promise<WorkspaceEdit | null | undefined> {
     const wordRange = document.getWordRangeAtPosition(position)
     const word = document.getText(wordRange)
 
     const edit = new WorkspaceEdit()
 
-    this.ohm.filterRules(document.uri, (rule) => {
-      if (rule.name._source === word) {
-        const range = rule.name.range
-        edit.replace(rule.uri, range, newName)
-      }
+    await this.ohm.filterRules(document.uri.toString(), {
+      includeRefs: true,
+      filter: (rule) => {
+        if (rule.name._source === word) {
+          const range = toRange(rule.name.range)
+          edit.replace(Uri.parse(rule.uri), range, newName)
+        }
 
-      rule.body.forEach((seq) => {
-        seq.terms.forEach((term) => {
-          if (term.ident?._source === word) {
-            const range = term.ident.range
-            edit.replace(rule.uri, range, newName)
-          }
+        rule.body.forEach((seq) => {
+          seq.terms.forEach((term) => {
+            if (term._source === word) {
+              const range = toRange(term.range)
+              edit.replace(Uri.parse(rule.uri), range, newName)
+            }
+          })
         })
-      })
 
-      return true
+        return true
+      },
     })
 
     return edit
   }
 
-  prepareRename(
+  async prepareRename(
     document: TextDocument,
     position: Position,
     token: CancellationToken,
-  ): ProviderResult<Range | { range: Range; placeholder: string }> {
+  ): Promise<Range | { range: Range; placeholder: string } | null | undefined> {
     const wordRange = document.getWordRangeAtPosition(position)
     const word = document.getText(wordRange)
 
     const uri = document.uri
-    const ast = this.ohm.getGrammar(uri)
+    const ast = await this.ohm.getGrammar(uri.toString())
     if (!ast) return
 
-    const hasRule =
-      this.ohm.filterRules(document.uri, (rule) => rule.name._source === word)
-        .length > 0
+    const rules = await this.ohm.filterRules(uri.toString(), {
+      includeRefs: true,
+      filter: (rule) => rule.name._source === word,
+    })
 
-    return hasRule ? wordRange : null
+    return rules.length > 0 ? wordRange : null
   }
 }

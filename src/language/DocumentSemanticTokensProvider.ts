@@ -6,21 +6,27 @@ import {
   SemanticTokens,
   SemanticTokensBuilder,
   SemanticTokensLegend,
-  EventEmitter
+  EventEmitter,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './OhmLanguage'
+import type { OhmAST } from '../core/ast'
+import type { OhmLanguage } from '../core/OhmLanguage'
 
 // https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide#standard-token-types-and-modifiers
-enum SemanticHighlight {
-  class = 'namespace',
-  interface = 'function',
-  keyword = 'keyword',
-  operator = 'operator'
-}
+const SemanticHighlight = {
+  class: 0,
+  interface: 1,
+  namespace: 2,
+} as const
 
-const tokenTypes = Object.values(SemanticHighlight)
-const tokenModifiers: string[] = []
+// https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide#standard-token-types-and-modifiers
+const SemanticModifier = {
+  declaration: 1 << 0,
+  definition: 2 << 1,
+} as const
+
+const tokenTypes = Object.keys(SemanticHighlight)
+const tokenModifiers = Object.keys(SemanticModifier)
 
 const legend = new SemanticTokensLegend(tokenTypes, tokenModifiers)
 
@@ -38,26 +44,40 @@ export class DocumentSemanticTokensProviderImpl
 
   onDidChangeSemanticTokens = this.onDidChangeEmitter.event
 
-  provideDocumentSemanticTokens(
+  async provideDocumentSemanticTokens(
     document: TextDocument,
-    token: CancellationToken
-  ): ProviderResult<SemanticTokens> {
-    const grammar = this.ohm.getGrammar(document.uri)
+    token: CancellationToken,
+  ): Promise<SemanticTokens> {
+    const ast = await this.ohm.getGrammar(document.uri.toString())
 
-    const tokensBuilder = new SemanticTokensBuilder(legend)
+    const builder = new SemanticTokensBuilder()
 
-    grammar?.grammars.forEach((g) => {
-      tokensBuilder.push(g.ident.range, SemanticHighlight.class)
+    ast?.grammars.forEach((g) => {
+      pushToken(g.ident, SemanticHighlight.class)
 
       if (g.super) {
-        tokensBuilder.push(g.super.range, SemanticHighlight.class)
+        pushToken(g.super, SemanticHighlight.namespace)
       }
 
       g.rules.forEach((rule) => {
-        tokensBuilder.push(rule.name.range, SemanticHighlight.interface)
+        pushToken(rule.name, SemanticHighlight.interface)
       })
     })
 
-    return tokensBuilder.build()
+    return builder.build()
+
+    function pushToken(
+      token: OhmAST.Token,
+      type: number,
+      mod: number = SemanticModifier.declaration,
+    ) {
+      builder.push(
+        token.range.start.line,
+        token.range.start.character,
+        token._source.length,
+        type,
+        mod,
+      )
+    }
   }
 }

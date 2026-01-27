@@ -10,8 +10,9 @@ import {
   type CompletionContext,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './OhmLanguage'
-import { builtinRules } from './ohm'
+import { builtinRules } from '../core/ohm'
+import { toRange } from './utils'
+import type { OhmLanguage } from '../core/OhmLanguage'
 
 export class CompletionItemProviderImpl
   extends DisposableImpl
@@ -21,15 +22,15 @@ export class CompletionItemProviderImpl
     super()
   }
 
-  provideCompletionItems(
+  async provideCompletionItems(
     document: TextDocument,
     position: Position,
     token: CancellationToken,
     context: CompletionContext,
-  ): ProviderResult<CompletionItem[] | CompletionList<CompletionItem>> {
+  ): Promise<CompletionItem[]> {
     const completionItems: CompletionItem[] = []
 
-    const allRules = this.ohm.filterRules(document.uri)
+    const allRules = await this.ohm.filterRules(document.uri.toString())
 
     allRules.forEach((rule) => {
       const item = new CompletionItem(
@@ -37,7 +38,7 @@ export class CompletionItemProviderImpl
         CompletionItemKind.Interface,
       )
 
-      item.documentation = document.getText(rule.range)
+      item.documentation = document.getText(toRange(rule.range))
       completionItems.push(item)
     })
 

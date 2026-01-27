@@ -1,197 +1,141 @@
 import {
-  type TextDocument,
   languages,
   workspace,
   Uri,
-  window,
-  SemanticTokensLegend,
   Diagnostic,
-  DiagnosticSeverity
+  type ExtensionContext,
+  Position,
+  Range,
+  type DocumentSelector,
+  window,
+  TabInputText,
 } from 'vscode'
-import { getNodeRange, parseAST, type OhmAST } from './ast'
-import { DisposableImpl } from './DisposableImpl'
 import { HoverProviderImpl } from './HoverPorviderImpl'
 import { DefinitionProviderImpl } from './DefinitionProviderImpl'
 import { DocumentSymbolProviderImpl } from './DocumentSymbolProviderImpl'
 import { RenameProviderImpl } from './RenameProviderImpl'
 import { CompletionItemProviderImpl } from './CompletionItemProviderImpl'
 import { DocumentSemanticTokensProviderImpl } from './DocumentSemanticTokensProvider'
-import type { MatchResult } from 'ohm-js'
+import { toRange } from './utils'
+import { OhmLanguage } from '../core/OhmLanguage'
+import type { IFilesystem } from '../core/types'
+import { EventEmitter } from '@0x-jerry/utils'
 
-export interface LocationRule extends OhmAST.Tokens.Rule {
-  uri: Uri
+interface IFSEvents {
+  changed: [uri: string]
+  removed: [uri: string]
 }
 
-export class OhmLanguage extends DisposableImpl {
-  langSelector = 'ohm'
+class IFS implements IFilesystem {
+  events = new EventEmitter<IFSEvents>()
 
-  #astMap = new Map<string, OhmAST.Tokens.Grammars>()
+  async readContent(uri: string): Promise<string | null> {
+    const parsedUri = Uri.parse(uri)
 
-  #diagnosticCollection = languages.createDiagnosticCollection(
-    this.langSelector
-  )
-  constructor() {
-    super()
-
-    const lang = this.langSelector
-    const features = [
-      languages.registerHoverProvider(lang, new HoverProviderImpl(this)),
-      languages.registerDefinitionProvider(
-        lang,
-        new DefinitionProviderImpl(this)
-      ),
-      languages.registerDocumentSymbolProvider(
-        this.langSelector,
-        new DocumentSymbolProviderImpl(this)
-      ),
-      languages.registerRenameProvider(
-        this.langSelector,
-        new RenameProviderImpl(this)
-      ),
-      languages.registerCompletionItemProvider(
-        this.langSelector,
-        new CompletionItemProviderImpl(this)
-      ),
-      // languages.registerDocumentSemanticTokensProvider(
-      //   this.langSelector,
-      //   new DocumentSemanticTokensProviderImpl(this),
-      //   DocumentSemanticTokensProviderImpl.legend
-      // )
-    ]
-
-    this.subscribe(this.#diagnosticCollection)
-
-    features.forEach((disposable) => this.subscribe(disposable))
-
-    const currentDoc = window.activeTextEditor?.document
-
-    if (currentDoc) {
-      this.#updateAST(currentDoc)
+    if (parsedUri.scheme !== 'file') {
+      return null
     }
 
-    this.subscribe(
-      workspace.onDidOpenTextDocument((doc) => {
-        this.#updateAST(doc)
-      })
-    )
+    const doc = await workspace.fs.readFile(parsedUri)
 
-    this.subscribe(
-      workspace.onDidChangeTextDocument((changeEvt) => {
-        const { document: doc, reason, contentChanges } = changeEvt
+    const content = doc.toString()
 
-        this.#updateAST(doc, true)
-      })
-    )
-
-    this.subscribe(
-      workspace.onDidDeleteFiles((deleteEvt) => {
-        deleteEvt.files.forEach((item) => {
-          if (!this.#isOhmLang(item)) return
-
-          this.#astMap.delete(item.toString())
-        })
-      })
-    )
+    return content
   }
 
-  #isOhmLang(uri: Uri) {
-    return uri.path.endsWith('.ohm')
+  on(event: 'changed', callback: (uri: string) => void): void
+  on(event: 'removed', callback: (uri: string) => void): void
+  on(event: any, callback: any): void {
+    this.events.on(event, callback)
+  }
+}
+
+export function registerProviders(context: ExtensionContext) {
+  const lang = 'ohm'
+  const docSelector: DocumentSelector = { scheme: 'file', language: lang }
+
+  const fs = new IFS()
+
+  const ohm = new OhmLanguage({
+    log: console,
+    fs,
+  })
+
+  const diagnosticCollection = languages.createDiagnosticCollection(lang)
+
+  const services = [
+    languages.registerHoverProvider(docSelector, new HoverProviderImpl(ohm)),
+    languages.registerDefinitionProvider(
+      docSelector,
+      new DefinitionProviderImpl(ohm),
+    ),
+    languages.registerDocumentSymbolProvider(
+      docSelector,
+      new DocumentSymbolProviderImpl(ohm),
+    ),
+    languages.registerRenameProvider(docSelector, new RenameProviderImpl(ohm)),
+    languages.registerCompletionItemProvider(
+      docSelector,
+      new CompletionItemProviderImpl(ohm),
+    ),
+    languages.registerDocumentSemanticTokensProvider(
+      docSelector,
+      new DocumentSemanticTokensProviderImpl(ohm),
+      DocumentSemanticTokensProviderImpl.legend,
+    ),
+    diagnosticCollection,
+    workspace.onDidOpenTextDocument((doc) => {
+      updateDiagnostic(doc.uri)
+    }),
+    workspace.onDidChangeTextDocument((changeEvt) => {
+      const { document: doc } = changeEvt
+      updateDiagnostic(doc.uri)
+    }),
+    workspace.onDidDeleteFiles((deleteEvt) => {
+      deleteEvt.files.forEach((uri) => {
+        fs.events.emit('removed', uri.toString())
+      })
+    }),
+  ]
+
+  services.forEach((disposable) => context.subscriptions.push(disposable))
+
+  for (const file of getOpenedFileUris()) {
+    updateDiagnostic(file)
   }
 
-  #updateASTByContent(uri: Uri, content: string, force = false) {
-    const uriString = uri.toString()
-    if (!force && this.#astMap.has(uriString)) return
+  async function updateDiagnostic(uri: Uri) {
+    const data = await ohm.getInternalData(uri.toString())
 
-    try {
-      const ast = parseAST(content)
-
-      this.#diagnosticCollection.delete(uri)
-      this.#astMap.set(uriString, ast)
-      return ast
-    } catch (error) {
-      const err = error as MatchResult
-      if (err.failed?.()) {
-        const info = err.getInterval()
-
-        const range = getNodeRange(info)
-
-        const diagnostic = new Diagnostic(
-          range,
-          err.shortMessage || err.message || 'Unknown error',
-          DiagnosticSeverity.Error
-        )
-
-        this.#diagnosticCollection.set(uri, [diagnostic])
-      }
+    if (data.diagnostics.kind === 'unchanged') {
+      return
     }
-  }
 
-  async #updateAST(doc: TextDocument, force = false) {
-    const uri = doc.uri
+    const reports = data.diagnostics.items.map((item) => {
+      item.severity
+      const diagnostic = new Diagnostic(
+        toRange(item.range),
+        item.message,
+        item.severity != null ? item.severity - 1 : undefined,
+      )
 
-    if (!this.#isOhmLang(uri)) return
-
-    const ast = this.#updateASTByContent(uri, doc.getText(), force)
-
-    if (!ast) return
-
-    const paths = this.#resolverSuperGrammars(ast).map((p) =>
-      Uri.joinPath(uri, '..', p)
-    )
-
-    for (const refPath of paths) {
-      if (this.#astMap.has(refPath.toString())) {
-        continue
-      }
-
-      const content = await workspace.fs.readFile(refPath)
-
-      this.#updateASTByContent(refPath, content.toString(), force)
-    }
-  }
-
-  #resolverSuperGrammars(ast: OhmAST.Tokens.Grammars) {
-    const refsPath = ast.grammars
-      .filter((item) => item.super?.name != null)
-      .map((item) => ast.ref[item.super!.name])
-      .filter((n) => n != null)
-
-    return refsPath
-  }
-
-  getGrammar(uri: Uri) {
-    return this.#astMap.get(uri.toString())
-  }
-
-  filterRules(uri: Uri, predict?: (rule: LocationRule) => boolean) {
-    const ast = this.#astMap.get(uri.toString())
-    if (!ast) return []
-
-    const rules: LocationRule[] = []
-
-    ast.grammars.forEach((grammar) => {
-      grammar.rules.forEach((rule) => {
-        const _rule: LocationRule = {
-          ...rule,
-          uri
-        }
-
-        if (!predict || predict(_rule)) {
-          rules.push(_rule)
-        }
-      })
+      return diagnostic
     })
 
-    const paths = Object.values(ast.ref).map((item) =>
-      Uri.joinPath(uri, '..', item)
-    )
-
-    for (const ohmFilePath of paths) {
-      const superGrammarRules = this.filterRules(ohmFilePath, predict)
-
-      if (superGrammarRules) rules.push(...superGrammarRules)
-    }
-
-    return rules
+    diagnosticCollection.set(uri, reports)
   }
+}
+
+function getOpenedFileUris(): Uri[] {
+  const uris: Uri[] = []
+
+  for (const tabGroup of window.tabGroups.all) {
+    for (const tab of tabGroup.tabs) {
+      if (tab.input instanceof TabInputText) {
+        uris.push(tab.input.uri)
+      }
+    }
+  }
+
+  return [...new Set(uris)]
 }

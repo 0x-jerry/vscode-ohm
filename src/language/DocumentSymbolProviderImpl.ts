@@ -7,9 +7,11 @@ import {
   DocumentSymbol,
   SymbolInformation,
   SymbolKind,
+  Uri,
 } from 'vscode'
 import { DisposableImpl } from './DisposableImpl'
-import type { OhmLanguage } from './OhmLanguage'
+import { toRange } from './utils'
+import type { OhmLanguage } from '../core/OhmLanguage'
 
 export class DocumentSymbolProviderImpl
   extends DisposableImpl
@@ -19,19 +21,22 @@ export class DocumentSymbolProviderImpl
     super()
   }
 
-  provideDocumentSymbols(
+  async provideDocumentSymbols(
     document: TextDocument,
     token: CancellationToken,
-  ): ProviderResult<SymbolInformation[] | DocumentSymbol[]> {
+  ): Promise<SymbolInformation[] | DocumentSymbol[] | null | undefined> {
     const symbols: SymbolInformation[] = []
 
-    const allRules = this.ohm.filterRules(document.uri)
+    const allRules = await this.ohm.filterRules(document.uri.toString(), {
+      includeRefs: true,
+    })
+
     allRules.forEach((rule) => {
       const s = new SymbolInformation(
         rule.name._source,
         SymbolKind.Interface,
         rule.root?.ident._source || 'root',
-        new Location(rule.uri, rule.name.range),
+        new Location(Uri.parse(rule.uri), toRange(rule.name.range)),
       )
 
       symbols.push(s)
