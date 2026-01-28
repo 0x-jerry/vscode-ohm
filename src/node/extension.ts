@@ -6,22 +6,22 @@ import {
   type ServerOptions,
   TransportKind,
 } from 'vscode-languageclient/node'
-import { registerProviders } from './language/OhmLanguage'
 
 let client: LanguageClient
 
-const USE_LSP = true
-
 export async function activate(context: ExtensionContext) {
-  if (USE_LSP) {
-    startLSP(context)
-  } else {
-    registerProviders(context)
-  }
+  client = startLSP(context)
 }
 
-async function startLSP(context: ExtensionContext) {
-  const serverModule = context.asAbsolutePath('dist/lsp/server.js')
+export function deactivate(): Thenable<void> | undefined {
+  if (!client) {
+    return undefined
+  }
+  return client.stop()
+}
+
+function startLSP(context: ExtensionContext) {
+  const serverModule = context.asAbsolutePath('dist/node/lsp.js')
 
   const serverOptions: ServerOptions = {
     run: { module: serverModule, transport: TransportKind.ipc },
@@ -39,7 +39,7 @@ async function startLSP(context: ExtensionContext) {
   }
 
   // Create the language client and start the client.
-  client = new LanguageClient(
+  const client = new LanguageClient(
     'lsp.ohm',
     'Ohm Language Server',
     serverOptions,
@@ -47,12 +47,7 @@ async function startLSP(context: ExtensionContext) {
   )
 
   // Start the client. This will also launch the server
-  await client.start()
-}
+  client.start()
 
-export function deactivate(): Thenable<void> | undefined {
-  if (!client) {
-    return undefined
-  }
-  return client.stop()
+  return client
 }

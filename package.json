@@ -22,16 +22,12 @@
     "ohm",
     "ohm-js"
   ],
-  "activationEvents": [],
   "icon": "resources/logo.png",
-  "main": "./dist/extension.js",
-  "browser": "./dist/extension.js",
+  "main": "./dist/node/extension.js",
+  "browser": "./dist/web/extension.js",
   "extensionKind": [
     "workspace"
   ],
-  "capabilities": {
-    "virtualWorkspaces": false
-  },
   "contributes": {
     "languages": [
       {
@@ -62,17 +58,6 @@
     "generate:ohm": "ohm generateBundles src/grammar/*.ohm -t -e",
     "release": "x-release --publish false"
   },
-  "tsup": {
-    "entry": [
-      "src/lsp/server.ts",
-      "src/extension.ts"
-    ],
-    "sourcemap": true,
-    "clean": true,
-    "external": [
-      "vscode"
-    ]
-  },
   "devDependencies": {
     "@0x-jerry/utils": "^6.0.0",
     "@0x-jerry/x-release": "^2.4.1",
@@ -87,8 +72,6 @@
     "ufo": "^1.6.3",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
-    "vscode-languageserver-protocol": "^3.17.5",
-    "vscode-languageserver-textdocument": "^1.0.12",
-    "vscode-languageserver-types": "^3.17.5"
+    "vscode-languageserver-textdocument": "^1.0.12"
   }
 }

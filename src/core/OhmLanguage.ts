@@ -6,7 +6,7 @@ import {
   SymbolInformation,
   SymbolKind,
   type DocumentDiagnosticReport,
-} from 'vscode-languageserver-protocol'
+} from 'vscode-languageserver'
 import { joinRelativeURL } from 'ufo'
 import type { IFilesystem } from './types'
 

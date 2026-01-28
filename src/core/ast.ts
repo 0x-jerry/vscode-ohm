@@ -6,7 +6,7 @@ import {
   type Node,
 } from 'ohm-js'
 import type { OhmActionDict } from '../grammar/ohm-grammar.ohm-bundle'
-import type { Position, Range } from 'vscode-languageserver-types'
+import type { Position, Range } from 'vscode-languageserver'
 
 export namespace OhmAST {
   export enum Type {
