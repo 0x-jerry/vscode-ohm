@@ -9,6 +9,7 @@ import {
   LanguageClient,
   type LanguageClientOptions,
 } from 'vscode-languageclient/browser'
+import { filesystemProtocolClientImpl } from '../common/FilesystemProtocolClientImpl'
 
 export async function activate(context: ExtensionContext) {
   const output = window.createOutputChannel('Ohm Language')
@@ -44,26 +45,7 @@ function startLSP(context: ExtensionContext, log: OutputChannel) {
     worker,
   )
 
-  interface GetFileContentParams {
-    uri?: string
-  }
-
-  client.onRequest(
-    'ohm/get-file-content',
-    async (params: GetFileContentParams = {}) => {
-      const { uri } = params
-
-      if (!uri) {
-        return null
-      }
-
-      const buf = await workspace.fs.readFile(Uri.parse(uri))
-      const decoder = new TextDecoder('utf-8')
-      const content = decoder.decode(buf)
-
-      return content
-    },
-  )
+  context.subscriptions.push(filesystemProtocolClientImpl(client))
 
   // Start the client. This will also launch the server
   client.start()

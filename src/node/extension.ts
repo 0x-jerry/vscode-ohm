@@ -6,6 +6,7 @@ import {
   type ServerOptions,
   TransportKind,
 } from 'vscode-languageclient/node'
+import { filesystemProtocolClientImpl } from '../common/FilesystemProtocolClientImpl'
 
 let client: LanguageClient
 
@@ -45,6 +46,8 @@ function startLSP(context: ExtensionContext) {
     serverOptions,
     clientOptions,
   )
+
+  context.subscriptions.push(filesystemProtocolClientImpl(client))
 
   // Start the client. This will also launch the server
   client.start()

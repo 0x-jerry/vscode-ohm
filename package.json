@@ -70,6 +70,7 @@
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "ufo": "^1.6.3",
+    "vitest": "^4.0.18",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12"

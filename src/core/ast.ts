@@ -1,6 +1,7 @@
 import { toAST } from 'ohm-js/extras'
 import {
   ohmGrammar,
+  grammar,
   type Interval,
   type LineAndColumnInfo,
   type Node,
@@ -323,6 +324,12 @@ const REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/gm
 const SINGLE_REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/
 
 export function parseAST(s: string) {
+  try {
+    grammar(s)
+  } catch (error) {
+    throw error
+  }
+
   const result = ohmGrammar.match(s)
   if (result.failed()) {
     throw result
@@ -343,4 +350,13 @@ export function parseAST(s: string) {
   }
 
   return ast
+}
+
+export interface GrammarParseError extends Error {
+  shortMessage: string
+  interval: Interval
+}
+
+export function isGrammarParseError(err: unknown): err is GrammarParseError {
+  return err instanceof Error && 'interval' in err
 }

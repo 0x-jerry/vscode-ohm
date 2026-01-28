@@ -1,5 +1,9 @@
-import { getNodeRange, parseAST, type OhmAST } from '../core/ast'
-import type { MatchResult } from 'ohm-js'
+import {
+  getNodeRange,
+  isGrammarParseError,
+  parseAST,
+  type OhmAST,
+} from '../core/ast'
 import {
   DiagnosticSeverity,
   DocumentDiagnosticReportKind,
@@ -8,7 +12,7 @@ import {
   type DocumentDiagnosticReport,
 } from 'vscode-languageserver'
 import { joinRelativeURL } from 'ufo'
-import type { IFilesystem } from './types'
+import type { IFilesystem } from '../common/FilesystemProtocol'
 
 export interface LocationRule extends OhmAST.Tokens.Rule {
   uri: string
@@ -27,15 +31,14 @@ export interface OhmLanguageOptions {
 
 interface InternalCacheData {
   uri: string
-  content?: string
   ast?: OhmAST.Tokens.Grammars
-  diagnostics: DocumentDiagnosticReport
+  diagnostics?: DocumentDiagnosticReport
 }
 
 export class OhmLanguage {
   documents: IFilesystem
 
-  _astMap = new Map<string, InternalCacheData>()
+  _internalData = new Map<string, Promise<InternalCacheData | undefined>>()
 
   get log() {
     return this.opt.log
@@ -45,42 +48,52 @@ export class OhmLanguage {
     this.documents = opt.fs
 
     this.documents.on('changed', (uri) => {
-      this._updateAST(uri)
+      this._updateCacheData(uri)
     })
 
-    this.documents.on('removed', (uri) => {
-      this.removeByUri(uri)
+    this.documents.on('deleted', (uri) => {
+      this._internalData.delete(uri)
     })
   }
 
-  async getInternalData(uri: string, forceUpdate = false) {
-    let data = this._astMap.get(uri)
+  _updateCacheData(uri: string) {
+    this.log.info(`update cache data for: ${uri}`)
+    const data = this._internalData.get(uri)
+    const p = this._calcCacheData(uri, data)
 
-    if (!data || forceUpdate) {
-      const newData = await this._updateAST(uri)
+    this._internalData.set(uri, p)
+  }
 
-      if (newData) {
-        this._astMap.set(uri, newData)
-      }
+  async _calcCacheData(
+    uri: string,
+    oldData?: Promise<InternalCacheData | undefined>,
+  ) {
+    const newData = await this._parseAST(uri)
+    const _oldData = await oldData
+
+    return newData || _oldData
+  }
+
+  async getInternalData(uri: string): Promise<InternalCacheData> {
+    if (!this._internalData.has(uri)) {
+      this._updateCacheData(uri)
     }
+
+    const data = await this._internalData.get(uri)
 
     const defaultData: InternalCacheData = {
       uri,
-      diagnostics: {
-        kind: DocumentDiagnosticReportKind.Unchanged,
-        resultId: Date.now().toString(),
-      },
     }
 
     return data || defaultData
   }
 
-  async _updateAST(uri: string): Promise<InternalCacheData | null> {
+  async _parseAST(uri: string): Promise<InternalCacheData | null> {
     const data: InternalCacheData = {
       uri,
       diagnostics: {
-        kind: DocumentDiagnosticReportKind.Unchanged,
-        resultId: Date.now().toString(),
+        kind: DocumentDiagnosticReportKind.Full,
+        items: [],
       },
     }
 
@@ -93,13 +106,14 @@ export class OhmLanguage {
     }
 
     try {
-      data.content = content
       data.ast = parseAST(content)
-    } catch (error) {
-      const err = error as MatchResult
 
-      if (err.failed()) {
-        const info = err.getInterval()
+      this.log.info(`parse ast for ${uri} success! ${content}`)
+    } catch (error) {
+      if (isGrammarParseError(error)) {
+        this.log.warn(`parse ast for ${uri} failed! ${String(error)}`)
+
+        const info = error.interval
 
         const range = getNodeRange(info)
 
@@ -109,7 +123,7 @@ export class OhmLanguage {
             {
               severity: DiagnosticSeverity.Error,
               range,
-              message: err.shortMessage || err.message || 'Unknown error',
+              message: error.shortMessage || error.message,
             },
           ],
         }
@@ -156,10 +170,6 @@ export class OhmLanguage {
 
   async getGrammar(uri: string) {
     return (await this.getInternalData(uri)).ast
-  }
-
-  removeByUri(uri: string) {
-    this._astMap.delete(uri)
   }
 
   async filterRules(

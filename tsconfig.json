@@ -5,7 +5,8 @@
     "verbatimModuleSyntax": true,
     "module": "ESNext",
     "target": "ESNext",
-    "moduleResolution": "Bundler"
+    "moduleResolution": "Bundler",
+    "types": ["vitest/globals"]
   },
   "include": ["src"]
 }

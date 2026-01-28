@@ -1,7 +1,7 @@
 import {
   CompletionItem,
   CompletionItemKind,
-  FileChangeType,
+  DocumentDiagnosticReportKind,
   Hover,
   SemanticTokensBuilder,
   TextDocumentSyncKind,
@@ -14,7 +14,7 @@ import {
 import { OhmLanguage, type LocationRule } from './OhmLanguage'
 import { builtinRules } from './ohm'
 import type { OhmAST } from './ast'
-import type { IFilesystem } from './types'
+import type { IFilesystem } from '../common/FilesystemProtocol'
 
 export interface ServiceOption {
   connection: Connection
@@ -46,7 +46,9 @@ export function startService(opt: ServiceOption) {
   connection.onInitialize((_params) => {
     const result: InitializeResult = {
       capabilities: {
-        textDocumentSync: TextDocumentSyncKind.Incremental,
+        textDocumentSync: {
+          change: TextDocumentSyncKind.Incremental,
+        },
         documentSymbolProvider: true,
         workspaceSymbolProvider: true,
         semanticTokensProvider: {
@@ -83,9 +85,21 @@ export function startService(opt: ServiceOption) {
   })
 
   connection.languages.diagnostics.on(async (params) => {
-    const data = await ohm.getInternalData(params.textDocument.uri)
+    const uri = params.textDocument.uri
 
-    return data.diagnostics
+    const data = await ohm.getInternalData(uri)
+    log.info(
+      `request diagnostics: ${uri}, ${JSON.stringify(data.diagnostics, null, 2)}`,
+    )
+
+    if (data.diagnostics) {
+      return data.diagnostics
+    }
+
+    return {
+      kind: DocumentDiagnosticReportKind.Unchanged,
+      resultId: Date.now().toString(),
+    }
   })
 
   connection.languages.semanticTokens.on(async (params) => {
@@ -200,16 +214,6 @@ export function startService(opt: ServiceOption) {
     }
 
     return null
-  })
-
-  connection.onDidChangeWatchedFiles((evt) => {
-    evt.changes.forEach((c) => {
-      if (c.type === FileChangeType.Deleted) {
-        fs.emit('removed', c.uri)
-      } else if (c.type === FileChangeType.Changed) {
-        fs.emit('changed', c.uri)
-      }
-    })
   })
 
   connection.onCompletion(async (params) => {
