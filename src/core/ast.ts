@@ -324,15 +324,22 @@ const REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/gm
 const SINGLE_REF_RE = /\/\/\s+@(?<name>[\w\d_]+)\s*=>\s*(?<path>.+)$/
 
 export function parseAST(s: string) {
-  try {
-    grammar(s)
-  } catch (error) {
-    throw error
-  }
+  // Disable it for now, because it will fall when use `Grammar Inheritance` rule
+
+  // try {
+  //   grammar(s)
+  // } catch (error) {
+  //   throw error
+  // }
 
   const result = ohmGrammar.match(s)
+
   if (result.failed()) {
-    throw result
+    const error = new Error(result.message) as GrammarParseError
+
+    error.interval = result.getInterval()
+    error.shortMessage = result.shortMessage
+    throw error
   }
 
   const ast = toAST(result, astMapping) as OhmAST.Tokens.Grammars

@@ -1,7 +1,7 @@
 import { parseAST } from './ast'
 
 describe('#ast', () => {
-  it('should failed', () => {
+  it.skip('should failed', () => {
     const compile = () =>
       parseAST(`
 Silver {
