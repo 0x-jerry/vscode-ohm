@@ -11,10 +11,28 @@ Unofficial [ohm-js] language support for vscode
 - Rename rule symbols
 - Provide rule completion
 - Problem diagnostic
+- Realtime syntax check
+
+## Realtime Syntax Check
+
+Example Configuration:
+
+```json
+{
+  "ohm-js.validator": [
+    {
+      "match": ["**/*.math"],
+      "grammar": "validate/math.ohm"
+    }
+  ]
+}
+```
+
+See [example](./playground/validate/)
 
 ## Super Grammar Reference
 
-Use the below comment format to specify the referenced grammar file. Please see [example](./example/es6.ohm).
+Use the below comment format to specify the referenced grammar file. Please see [example](./playground/es6.ohm).
 
 ```ts
 // @GrammarName => path/to/grammar.ohm
