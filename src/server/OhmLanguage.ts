@@ -105,7 +105,7 @@ export class OhmLanguage {
     try {
       data.ast = parseAST(content)
 
-      this.log.info(`parse ast for ${uri} success! ${content}`)
+      this.log.info(`parse ast for ${uri} success!`)
     } catch (error) {
       if (isGrammarParseError(error)) {
         this.log.warn(`parse ast for ${uri} failed! ${String(error)}`)

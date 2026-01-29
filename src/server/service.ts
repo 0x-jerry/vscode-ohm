@@ -83,7 +83,7 @@ export function startService(opt: ServiceOption) {
         definitionProvider: true,
         hoverProvider: true,
         completionProvider: {
-          resolveProvider: true,
+          triggerCharacters: [' '],
         },
         diagnosticProvider: {
           interFileDependencies: false,
@@ -235,14 +235,15 @@ export function startService(opt: ServiceOption) {
 
   connection.onCompletion(async (params) => {
     const { textDocument } = params
+    log.info(`receive completion request ${textDocument.uri}`)
 
     const rules = await ohm.filterRules(textDocument.uri)
 
     const completionItems = rules.map((rule) => {
       const item: CompletionItem = {
-        label: rule._source,
+        label: rule.name._source,
         kind: CompletionItemKind.Interface,
-        data: rule,
+        documentation: rule._source,
       }
 
       return item
@@ -259,21 +260,6 @@ export function startService(opt: ServiceOption) {
     })
 
     return [...completionItems, ...builtinCompletionItems]
-  })
-
-  connection.onCompletionResolve(async (item) => {
-    const rule: LocationRule = item.data
-
-    // Item.data may not be a location rule, check it first
-    if (!rule?._source) {
-      return item
-    }
-
-    const documentation = await fs.getTextByRange(rule.uri, rule.range)
-
-    item.documentation = documentation
-
-    return item
   })
 
   connection.onPrepareRename(async (params) => {
