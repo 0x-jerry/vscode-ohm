@@ -4,11 +4,11 @@ import {
   type FilesystemChangedParams,
   type FilesystemCommonParams,
   type FilesystemOpenedParams,
-} from './FilesystemProtocol'
+} from '../shared/FilesystemProtocol'
 import type { BaseLanguageClient } from 'vscode-languageclient'
 import type { TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument'
 
-export function filesystemProtocolClientImpl(conn: BaseLanguageClient) {
+export function registerFilesystemService(client: BaseLanguageClient) {
   const disposables: Disposable[] = [
     workspace.onDidDeleteFiles((evt) => {
       evt.files.forEach((file) => {
@@ -19,7 +19,7 @@ export function filesystemProtocolClientImpl(conn: BaseLanguageClient) {
         const uri = file.toString()
         const params: FilesystemCommonParams = { uri }
 
-        conn.sendRequest(FilesystemMethod.Deleted, params)
+        client.sendRequest(FilesystemMethod.Deleted, params)
       })
     }),
     workspace.onDidChangeTextDocument((evt) => {
@@ -48,7 +48,7 @@ export function filesystemProtocolClientImpl(conn: BaseLanguageClient) {
         }),
       }
 
-      conn.sendRequest(FilesystemMethod.Changed, params)
+      client.sendRequest(FilesystemMethod.Changed, params)
     }),
     workspace.onDidOpenTextDocument((evt) => {
       const uri = evt.uri
@@ -61,16 +61,19 @@ export function filesystemProtocolClientImpl(conn: BaseLanguageClient) {
         content: evt.getText(),
       }
 
-      conn.sendRequest(FilesystemMethod.Opened, params)
+      client.sendRequest(FilesystemMethod.Opened, params)
     }),
   ]
 
-  conn.onRequest(FilesystemMethod.Read, async (evt: FilesystemCommonParams) => {
-    const content = await workspace.fs.readFile(Uri.parse(evt.uri))
+  client.onRequest(
+    FilesystemMethod.Read,
+    async (evt: FilesystemCommonParams) => {
+      const content = await workspace.fs.readFile(Uri.parse(evt.uri))
 
-    const decoder = new TextDecoder()
-    return decoder.decode(content)
-  })
+      const decoder = new TextDecoder()
+      return decoder.decode(content)
+    },
+  )
 
   return Disposable.from(...disposables)
 }

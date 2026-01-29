@@ -1,6 +1,6 @@
 import { createConnection, ProposedFeatures } from 'vscode-languageserver/node'
-import { startService } from '../core/service'
-import { BaseFileSystem } from '../common/FilesystemProtocol'
+import { startService } from '../server/service'
+import { BaseFileSystem } from '../server/FilesystemProtocol'
 
 class IFS extends BaseFileSystem {}
 

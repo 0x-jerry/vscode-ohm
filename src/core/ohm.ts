@@ -1,4 +1,27 @@
-import { grammar, type Interval } from 'ohm-js'
+import {
+  Alt,
+  Apply,
+  CaseInsensitiveTerminal,
+  Extend,
+  grammar,
+  Iter,
+  Lex,
+  Lookahead,
+  Not,
+  Opt,
+  Param,
+  Plus,
+  Range,
+  Seq,
+  Splice,
+  Star,
+  Terminal,
+  UnicodeChar,
+  type Interval,
+  type IterationNode,
+  type NonterminalNode,
+  type TerminalNode,
+} from 'ohm-js'
 
 export interface BuiltinRule {
   label: string
@@ -95,5 +118,71 @@ export function validateContent(grammarSource: string, content: string) {
     error.shortMessage = result.shortMessage
 
     return error
+  }
+}
+
+export function traceMatchedContent(grammarSource: string, content: string) {
+  const g = grammar(grammarSource)
+
+  const traceObject = g.trace(content)
+
+  return Object.assign(traceObject as OhmTraceObject, {
+    grammar: g,
+  })
+}
+
+/**
+ * https://github.com/ohmjs/ohm/blob/1895b4e42da2528872b406288d44f8e354411944/packages/ohm-js/src/Trace.js
+ */
+export interface OhmTraceObject {
+  input: string
+  source: Interval
+  children: (OhmTraceObject | undefined)[]
+  expr: OhmExpr & { source?: Interval }
+  bindings: OhmBinding[]
+
+  readonly isRootNode: boolean
+  readonly succeeded: boolean
+}
+
+type OhmBinding = TerminalNode | NonterminalNode | IterationNode
+
+type OhmExpr =
+  | Terminal
+  | Range
+  | Param
+  | Alt
+  | Extend
+  | Splice
+  | Seq
+  | Iter
+  | Star
+  | Plus
+  | Opt
+  | Not
+  | Lookahead
+  | Lex
+  | Apply
+  | UnicodeChar
+  | CaseInsensitiveTerminal
+
+export function visitTraceObject(
+  currentNode: OhmTraceObject,
+  cb: (
+    o: OhmTraceObject,
+    parent?: OhmTraceObject,
+  ) => void | { skip: true },
+  parent?: OhmTraceObject,
+) {
+  const r = cb(currentNode, parent)
+
+  if (r?.skip) {
+    return
+  }
+
+  for (const node of currentNode.children) {
+    if (node) {
+      visitTraceObject(node, cb, currentNode)
+    }
   }
 }

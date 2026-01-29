@@ -1,4 +1,4 @@
-import { getNodeRange, parseAST, type OhmAST } from '../core/ast'
+import { parseAST, type OhmAST } from '../core/ast'
 import {
   DiagnosticSeverity,
   DocumentDiagnosticReportKind,
@@ -7,8 +7,9 @@ import {
   type DocumentDiagnosticReport,
 } from 'vscode-languageserver'
 import { joinRelativeURL } from 'ufo'
-import type { IFilesystem } from '../common/FilesystemProtocol'
-import { isGrammarParseError } from './ohm'
+import { isGrammarParseError } from '../core/ohm'
+import type { IFilesystem } from '../shared/FilesystemProtocol'
+import { covertIntervalToRange } from '../core/utils'
 
 export interface LocationRule extends OhmAST.Tokens.Rule {
   uri: string
@@ -111,7 +112,7 @@ export class OhmLanguage {
 
         const info = error.interval
 
-        const range = getNodeRange(info)
+        const range = covertIntervalToRange(info)
 
         data.diagnostics = {
           kind: DocumentDiagnosticReportKind.Full,

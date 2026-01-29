@@ -17,27 +17,27 @@ importers:
       '@ohm-js/cli':
         specifier: ^2.0.1
         version: 2.0.1(ohm-js@17.3.0)
-      '@types/micromatch':
-        specifier: ^4.0.10
-        version: 4.0.10
       '@types/node':
         specifier: ^25.0.10
         version: 25.0.10
+      '@types/picomatch':
+        specifier: ^4.0.2
+        version: 4.0.2
       '@types/vscode':
         specifier: ^1.60.0
         version: 1.108.1
       '@vscode/vsce':
         specifier: ^3.7.1
         version: 3.7.1
-      micromatch:
-        specifier: ^4.0.8
-        version: 4.0.8
       ohm-js:
         specifier: ^17.3.0
         version: 17.3.0
       pathe:
         specifier: ^2.0.3
         version: 2.0.3
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(tsx@4.19.3)(typescript@5.9.3)(yaml@2.5.1)
@@ -696,9 +696,6 @@ packages:
   '@textlint/types@15.5.1':
     resolution: {integrity: sha512-IY1OVZZk8LOOrbapYCsaeH7XSJT89HVukixDT8CoiWMrKGCTCZ3/Kzoa3DtMMbY8jtY777QmPOVCNnR+8fF6YQ==}
 
-  '@types/braces@3.0.5':
-    resolution: {integrity: sha512-SQFof9H+LXeWNz8wDe7oN5zu7ket0qwMu5vZubW4GCJ8Kkeh6nBWUz87+KTz/G3Kqsrp0j/W253XJb3KMEeg3w==}
-
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
@@ -708,14 +705,14 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
-  '@types/micromatch@4.0.10':
-    resolution: {integrity: sha512-5jOhFDElqr4DKTrTEbnW8DZ4Hz5LRUEmyrGpCMrD/NphYv3nUnaF08xmSLx1rGGnyEs/kFnhiw6dCgcDqMr5PQ==}
-
   '@types/node@25.0.10':
     resolution: {integrity: sha512-zWW5KPngR/yvakJgGOmZ5vTBemDoSqF3AcV/LrO5u5wTWyEAVVh+IT39G4gtyAkh3CtTZs8aX/yRM82OfzHJRg==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
+
+  '@types/picomatch@4.0.2':
+    resolution: {integrity: sha512-qHHxQ+P9PysNEGbALT8f8YOSHW0KJu6l2xU8DYY0fu/EmGxXdVnuTLvFUvBgPJMSqXq29SYHveejeAha+4AYgA==}
 
   '@types/sarif@2.1.7':
     resolution: {integrity: sha512-kRz0VEkJqWLf1LLVN4pT1cg1Z9wAuvI6L97V3m2f5B76Tg8d413ddvLBPTEHAZJlnn4XSvu0FkZtViCQGVyrXQ==}
@@ -2671,8 +2668,6 @@ snapshots:
     dependencies:
       '@textlint/ast-node-types': 15.5.1
 
-  '@types/braces@3.0.5': {}
-
   '@types/chai@5.2.3':
     dependencies:
       '@types/deep-eql': 4.0.2
@@ -2682,15 +2677,13 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
-  '@types/micromatch@4.0.10':
-    dependencies:
-      '@types/braces': 3.0.5
-
   '@types/node@25.0.10':
     dependencies:
       undici-types: 7.16.0
 
   '@types/normalize-package-data@2.4.4': {}
+
+  '@types/picomatch@4.0.2': {}
 
   '@types/sarif@2.1.7': {}
 

@@ -1,14 +1,9 @@
 import { toAST } from 'ohm-js/extras'
-import {
-  ohmGrammar,
-  grammar,
-  type Interval,
-  type LineAndColumnInfo,
-  type Node,
-} from 'ohm-js'
+import { ohmGrammar, type LineAndColumnInfo, type Node } from 'ohm-js'
 import type { OhmActionDict } from '../grammar/ohm-grammar.ohm-bundle'
-import type { Position, Range } from 'vscode-languageserver'
+import type { Range } from 'vscode-languageserver'
 import type { GrammarParseError } from './ohm'
+import { covertIntervalToRange } from './utils'
 
 export namespace OhmAST {
   export enum Type {
@@ -116,35 +111,13 @@ export namespace OhmAST {
 
 //  ----------
 
-export function getNodeRange(node: Interval): Range {
-  const location = node.getLineAndColumn()
-  const source = node.contents
-
-  const start: Position = {
-    line: location.lineNum - 1,
-    character: location.colNum - 1,
-  }
-
-  const end: Position = {
-    line: location.lineNum - 1,
-    character: location.colNum - 1 + source.length,
-  }
-
-  const range: Range = {
-    start,
-    end,
-  }
-
-  return range
-}
-
 function createToken<T extends OhmAST.Type>(
   t: Node,
   type: T,
 ): OhmAST.Tokens.GetTokenByType<T> {
   const _t: OhmAST.Token = {
     type,
-    range: getNodeRange(t.source),
+    range: covertIntervalToRange(t.source),
     _source: t.sourceString,
   }
 

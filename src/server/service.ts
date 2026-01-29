@@ -4,6 +4,7 @@ import {
   DiagnosticSeverity,
   DocumentDiagnosticReportKind,
   Hover,
+  Range,
   SemanticTokensBuilder,
   TextDocumentSyncKind,
   TextEdit,
@@ -13,14 +14,24 @@ import {
   type InitializeResult,
 } from 'vscode-languageserver'
 import { OhmLanguage, type LocationRule } from './OhmLanguage'
-import { builtinRules, validateContent } from './ohm'
-import { getNodeRange, type OhmAST } from './ast'
-import type { IFilesystem } from '../common/FilesystemProtocol'
+import {
+  builtinRules,
+  traceMatchedContent,
+  validateContent,
+  visitTraceObject,
+} from '../core/ohm'
+import { type OhmAST } from '../core/ast'
 import {
   OhmProtocolMethod,
+  type OhmTraceParams,
+  type OhmTraceResult,
   type OhmValidateParams,
   type OhmValidateResult,
-} from './OhmCustomProtocol'
+} from '../shared/OhmCustomProtocol'
+import { pexprs, type Interval } from 'ohm-js'
+import { isInRange } from './utils'
+import type { IFilesystem } from '../shared/FilesystemProtocol'
+import { covertIntervalToRange } from '../core/utils'
 
 export interface ServiceOption {
   connection: Connection
@@ -346,7 +357,7 @@ export function startService(opt: ServiceOption) {
 
       const info = error.interval
 
-      const range = getNodeRange(info)
+      const range = covertIntervalToRange(info)
 
       const result: OhmValidateResult = {
         errors: [
@@ -361,6 +372,67 @@ export function startService(opt: ServiceOption) {
       return result
     },
   )
+
+  connection.onRequest(OhmProtocolMethod.Trace, (params: OhmTraceParams) => {
+    const traceResult = traceMatchedContent(params.grammar, params.content)
+
+    log.info(`receive trace task: ${params.content}: ${!!traceResult}`)
+
+    if (!traceResult) {
+      return
+    }
+
+    const sourceIntervals: Interval[] = []
+    let lastMatchContentRange: Range | null = null
+
+    try {
+      visitTraceObject(traceResult, (node, parent) => {
+        const shouldSkip = { skip: true } as const
+        if (!(node.expr instanceof pexprs.Apply)) {
+          return
+        }
+
+        const range = covertIntervalToRange(node.source)
+
+        const inRange = isInRange(range, params.position)
+
+        if (!inRange) {
+          return shouldSkip
+        }
+
+        if (node.expr.source) {
+          const name = node.expr.toDisplayString()
+          const rules = traceResult.grammar.rules
+
+          // Exclude builtin rule
+          if (Object.hasOwn(rules, name)) {
+            sourceIntervals.push(rules[name].source)
+          }
+        }
+
+        lastMatchContentRange = range
+      })
+    } catch (error) {
+      const stack = (error as Error).stack
+      log.error(`trace: ${String(error)}\n${stack}`)
+    }
+
+    if (!sourceIntervals.length || !lastMatchContentRange) {
+      return
+    }
+
+    const finalSourceInterval = sourceIntervals.at(-1)!
+
+    const result: OhmTraceResult = {
+      grammarSourceRange: covertIntervalToRange(finalSourceInterval),
+      content: finalSourceInterval.contents,
+      range: lastMatchContentRange,
+    }
+
+    log.info(`trace result: ${JSON.stringify(result)}`)
+
+    return result
+  })
 
   connection.listen()
 }

@@ -9,13 +9,15 @@ import {
   LanguageClient,
   type LanguageClientOptions,
 } from 'vscode-languageclient/browser'
-import { filesystemProtocolClientImpl } from '../common/FilesystemProtocolClientImpl'
+import { registerClientServices } from '../client'
 
 export async function activate(context: ExtensionContext) {
   const output = window.createOutputChannel('Ohm Language')
   context.subscriptions.push(output)
 
   const client = startLSP(context, output)
+
+  context.subscriptions.push(registerClientServices(client))
 
   context.subscriptions.push({
     dispose() {
@@ -44,8 +46,6 @@ function startLSP(context: ExtensionContext, log: OutputChannel) {
     clientOptions,
     worker,
   )
-
-  context.subscriptions.push(filesystemProtocolClientImpl(client))
 
   // Start the client. This will also launch the server
   client.start()

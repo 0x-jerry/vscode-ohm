@@ -4,21 +4,19 @@ import {
   languages,
   Position,
   Range,
-  TabInputText,
   Uri,
-  window,
   workspace,
   type TextDocument,
 } from 'vscode'
 import type { BaseLanguageClient } from 'vscode-languageclient'
-import micromatch from 'micromatch'
+import picomatch from 'picomatch'
 import {
   OhmProtocolMethod,
   type OhmValidateParams,
   type OhmValidateResult,
-} from '../core/OhmCustomProtocol'
+} from '../shared/OhmCustomProtocol'
 
-interface ValidatorMatchConfig {
+export interface ValidatorMatchConfig {
   match: string[]
   grammar: string
 }
@@ -89,7 +87,7 @@ export function registerValidatorService(client: BaseLanguageClient) {
   }
 }
 
-function getMatchedValidatorConfig(uri: Uri) {
+export function getMatchedValidatorConfig(uri: Uri) {
   if (uri.scheme !== 'file') {
     return
   }
@@ -99,6 +97,6 @@ function getMatchedValidatorConfig(uri: Uri) {
     .get<ValidatorMatchConfig[]>('validator')
 
   return configs?.find((conf) => {
-    return micromatch.isMatch(uri.fsPath, conf.match)
+    return picomatch.isMatch(uri.fsPath, conf.match)
   })
 }

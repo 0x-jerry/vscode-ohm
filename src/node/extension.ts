@@ -6,15 +6,14 @@ import {
   type ServerOptions,
   TransportKind,
 } from 'vscode-languageclient/node'
-import { filesystemProtocolClientImpl } from '../common/FilesystemProtocolClientImpl'
-import { registerValidatorService } from '../common/registerValidatorService'
+import { registerClientServices } from '../client'
 
 let client: LanguageClient
 
 export async function activate(context: ExtensionContext) {
   client = startLSP(context)
 
-  context.subscriptions.push(registerValidatorService(client))
+  context.subscriptions.push(registerClientServices(client))
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -49,8 +48,6 @@ function startLSP(context: ExtensionContext) {
     serverOptions,
     clientOptions,
   )
-
-  context.subscriptions.push(filesystemProtocolClientImpl(client))
 
   // Start the client. This will also launch the server
   client.start()
