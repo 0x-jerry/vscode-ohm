@@ -1,0 +1,8 @@
+{
+  "ohm-js.validator": [
+    {
+      "match": ["**/*.math"],
+      "grammar": "validate/math.ohm"
+    }
+  ]
+}

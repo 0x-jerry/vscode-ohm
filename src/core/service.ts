@@ -1,6 +1,7 @@
 import {
   CompletionItem,
   CompletionItemKind,
+  DiagnosticSeverity,
   DocumentDiagnosticReportKind,
   Hover,
   SemanticTokensBuilder,
@@ -12,9 +13,14 @@ import {
   type InitializeResult,
 } from 'vscode-languageserver'
 import { OhmLanguage, type LocationRule } from './OhmLanguage'
-import { builtinRules } from './ohm'
-import type { OhmAST } from './ast'
+import { builtinRules, validateContent } from './ohm'
+import { getNodeRange, type OhmAST } from './ast'
 import type { IFilesystem } from '../common/FilesystemProtocol'
+import {
+  OhmProtocolMethod,
+  type OhmValidateParams,
+  type OhmValidateResult,
+} from './OhmCustomProtocol'
 
 export interface ServiceOption {
   connection: Connection
@@ -326,6 +332,35 @@ export function startService(opt: ServiceOption) {
       edit.changes[uri].push(change)
     }
   })
+
+  connection.onRequest(
+    OhmProtocolMethod.Validate,
+    (params: OhmValidateParams) => {
+      log.info(`receive validate task: ${params.content}`)
+      //
+      const error = validateContent(params.grammar, params.content)
+
+      if (!error) {
+        return
+      }
+
+      const info = error.interval
+
+      const range = getNodeRange(info)
+
+      const result: OhmValidateResult = {
+        errors: [
+          {
+            severity: DiagnosticSeverity.Error,
+            range,
+            message: error.shortMessage || error.message,
+          },
+        ],
+      }
+
+      return result
+    },
+  )
 
   connection.listen()
 }

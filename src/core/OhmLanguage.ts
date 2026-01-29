@@ -1,9 +1,4 @@
-import {
-  getNodeRange,
-  isGrammarParseError,
-  parseAST,
-  type OhmAST,
-} from '../core/ast'
+import { getNodeRange, parseAST, type OhmAST } from '../core/ast'
 import {
   DiagnosticSeverity,
   DocumentDiagnosticReportKind,
@@ -13,6 +8,7 @@ import {
 } from 'vscode-languageserver'
 import { joinRelativeURL } from 'ufo'
 import type { IFilesystem } from '../common/FilesystemProtocol'
+import { isGrammarParseError } from './ohm'
 
 export interface LocationRule extends OhmAST.Tokens.Rule {
   uri: string

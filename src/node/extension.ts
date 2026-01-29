@@ -7,11 +7,14 @@ import {
   TransportKind,
 } from 'vscode-languageclient/node'
 import { filesystemProtocolClientImpl } from '../common/FilesystemProtocolClientImpl'
+import { registerValidatorService } from '../common/registerValidatorService'
 
 let client: LanguageClient
 
 export async function activate(context: ExtensionContext) {
   client = startLSP(context)
+
+  context.subscriptions.push(registerValidatorService(client))
 }
 
 export function deactivate(): Thenable<void> | undefined {

@@ -25,6 +25,9 @@
   "icon": "resources/logo.png",
   "main": "./dist/node/extension.js",
   "browser": "./dist/web/extension.js",
+  "activationEvents": [
+    "workspaceContains:*.ohm"
+  ],
   "extensionKind": [
     "workspace"
   ],
@@ -48,7 +51,32 @@
         "scopeName": "source.ohm",
         "path": "./settings/ohm.tmLanguage.json"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Ohm-js settings",
+      "properties": {
+        "ohm-js.validator": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "match": {
+                "type": "array",
+                "description": "Glob pattern",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "grammar": {
+                "type": "string",
+                "description": "Ohm grammar that used to validate the matched file, relative path"
+              }
+            }
+          },
+          "default": []
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "tsup",
@@ -62,9 +90,11 @@
     "@0x-jerry/utils": "^6.0.0",
     "@0x-jerry/x-release": "^2.4.1",
     "@ohm-js/cli": "^2.0.1",
+    "@types/micromatch": "^4.0.10",
     "@types/node": "^25.0.10",
     "@types/vscode": "^1.60.0",
     "@vscode/vsce": "^3.7.1",
+    "micromatch": "^4.0.8",
     "ohm-js": "^17.3.0",
     "pathe": "^2.0.3",
     "tsup": "^8.5.1",

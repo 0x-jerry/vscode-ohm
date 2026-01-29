@@ -8,6 +8,7 @@ import {
 } from 'ohm-js'
 import type { OhmActionDict } from '../grammar/ohm-grammar.ohm-bundle'
 import type { Position, Range } from 'vscode-languageserver'
+import type { GrammarParseError } from './ohm'
 
 export namespace OhmAST {
   export enum Type {
@@ -357,13 +358,4 @@ export function parseAST(s: string) {
   }
 
   return ast
-}
-
-export interface GrammarParseError extends Error {
-  shortMessage: string
-  interval: Interval
-}
-
-export function isGrammarParseError(err: unknown): err is GrammarParseError {
-  return err instanceof Error && 'interval' in err
 }

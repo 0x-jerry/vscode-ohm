@@ -1,3 +1,5 @@
+import { grammar, type Interval } from 'ohm-js'
+
 export interface BuiltinRule {
   label: string
   documentation?: string
@@ -71,3 +73,27 @@ export const builtinRules: BuiltinRule[] = [
     label: 'caseInsensitive',
   },
 ]
+
+export interface GrammarParseError extends Error {
+  shortMessage: string
+  interval: Interval
+}
+
+export function isGrammarParseError(err: unknown): err is GrammarParseError {
+  return err instanceof Error && 'interval' in err
+}
+
+export function validateContent(grammarSource: string, content: string) {
+  const g = grammar(grammarSource)
+
+  const result = g.match(content)
+
+  if (result.failed()) {
+    const error = new Error(result.message) as GrammarParseError
+
+    error.interval = result.getInterval()
+    error.shortMessage = result.shortMessage
+
+    return error
+  }
+}
