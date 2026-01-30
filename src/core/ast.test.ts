@@ -1,18 +1,19 @@
-import { grammar, ohmGrammar } from 'ohm-js'
-import { covertIntervalToRange, parseAST } from './ast'
-import { traceMatchedContent, visitTraceObject } from './ohm'
-import { isInRange } from '../server/utils'
+import { parseAST } from './ast'
+import { traceMatchedContent } from './ohm'
 
 describe('#ast', () => {
-  it.skip('should failed', () => {
-    const compile = () =>
-      parseAST(`
+  it('should failed', () => {
+    const compile = () => {
+      const ast = parseAST(`
 Silver {
     Hello = f
-    f = letter
+    f = letter (a | b)
     f f2
 }
 `)
+
+      console.log(ast)
+    }
 
     expect(compile).to.throw()
   })

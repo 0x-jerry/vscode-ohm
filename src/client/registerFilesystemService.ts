@@ -4,6 +4,7 @@ import {
   type FilesystemChangedParams,
   type FilesystemCommonParams,
   type FilesystemOpenedParams,
+  type FilesystemRenameParams,
 } from '../shared/FilesystemProtocol'
 import type { BaseLanguageClient } from 'vscode-languageclient'
 import type { TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument'
@@ -20,6 +21,16 @@ export function registerFilesystemService(client: BaseLanguageClient) {
         const params: FilesystemCommonParams = { uri }
 
         client.sendRequest(FilesystemMethod.Deleted, params)
+      })
+    }),
+    workspace.onDidRenameFiles((evt) => {
+      evt.files.forEach((evt) => {
+        const params: FilesystemRenameParams = {
+          uri: evt.oldUri.toString(),
+          newUri: evt.newUri.toString(),
+        }
+
+        client.sendRequest(FilesystemMethod.Rename, params)
       })
     }),
     workspace.onDidChangeTextDocument((evt) => {

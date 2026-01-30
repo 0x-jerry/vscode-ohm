@@ -28,15 +28,22 @@ export interface IFilesystem {
 }
 
 export const FilesystemMethod = {
-  Read: 'ohm/file-read-content',
-  Changed: 'ohm/file-content-changed',
-  Deleted: 'ohm/file-deleted',
-  Opened: 'ohm/file-opened',
+  Read: 'ohm-fs/file-read-content',
+  Rename: 'ohm-fs/file-rename',
+  Changed: 'ohm-fs/file-content-changed',
+  Deleted: 'ohm-fs/file-deleted',
+  Opened: 'ohm-fs/file-opened',
 } as const
 
 export interface FilesystemCommonParams {
   uri: string
 }
+
+export interface FilesystemRenameParams {
+  uri: string
+  newUri: string
+}
+
 
 export interface FilesystemChangedParams {
   uri: string

@@ -1,0 +1,13 @@
+Arithmetic {
+  Exp
+    = AddExp
+
+  AddExp = (ident | number)
+
+  ident  (an identifier)
+    = letter alnum*
+
+  number  (a number)
+    = digit* "." digit+  -- fract
+    | digit+             -- whole
+}

@@ -80,7 +80,7 @@ export namespace OhmAST {
 
     export interface Seq extends Token {
       type: Type.Seq
-      terms: Term[]
+      terms: (Term | terminal | Seq)[]
     }
 
     export interface Term extends Token {
@@ -94,6 +94,10 @@ export namespace OhmAST {
       idents: string[]
     }
 
+    export interface terminal extends Token {
+      type: Type.terminal
+    }
+
     export type All =
       | Grammars
       | Grammar
@@ -102,6 +106,7 @@ export namespace OhmAST {
       | Term
       | Formals
       | SuperGrammar
+      | terminal
 
     export type GetTokenByType<T, U extends All = All> = U extends { type: T }
       ? U
@@ -228,7 +233,9 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
   },
   Seq(iters) {
     const t = createToken(this, OhmAST.Type.Seq)
-    t.terms = iters.toAST(astMapping)
+
+    // The result maybe like: [term,[seq,seq]]
+    t.terms = iters.toAST(astMapping).flat()
 
     return t
   },
@@ -268,14 +275,17 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
 
     return t
   },
-  Base_paren(arg0, arg1, arg2) {
-    return createToken(this, OhmAST.Type.Base)
+  Base_paren(arg0, alt, arg2) {
+    return alt.toAST(astMapping)
   },
   Base_range(arg0, arg1, arg2) {
     return createToken(this, OhmAST.Type.Base)
   },
   Base_terminal(arg0) {
-    return createToken(this, OhmAST.Type.Base)
+    return createToken(this, OhmAST.Type.terminal)
+  },
+  Alt(iters) {
+    return iters.toAST(astMapping)
   },
   ident(name) {
     return createToken(this, OhmAST.Type.ident)

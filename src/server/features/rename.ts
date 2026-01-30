@@ -1,5 +1,6 @@
 import type { Connection, TextEdit, WorkspaceEdit } from 'vscode-languageserver'
 import type { FeatureContext } from './types'
+import { OhmAST } from '../../core/ast'
 
 export function registerRename(
   connection: Connection,
@@ -52,8 +53,17 @@ export function registerRename(
           })
         }
 
-        rule.body.forEach((seq) => {
-          seq.terms.forEach((term) => {
+        for (const seq of rule.body) {
+          iterSeq(seq)
+        }
+
+        function iterSeq(seq: OhmAST.Tokens.Seq) {
+          for (const term of seq.terms) {
+            if (term.type === OhmAST.Type.Seq) {
+              iterSeq(term)
+              continue
+            }
+
             if (term._source === word) {
               const range = term.range
 
@@ -62,8 +72,8 @@ export function registerRename(
                 range,
               })
             }
-          })
-        })
+          }
+        }
       },
       {
         includeRefs: true,

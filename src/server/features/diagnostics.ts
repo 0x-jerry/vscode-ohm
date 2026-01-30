@@ -10,6 +10,7 @@ import {
 import type { FeatureContext } from './types'
 import { builtinRules } from '../../core/ohm'
 import type { InternalCacheData } from '../OhmLanguage'
+import { OhmAST } from '../../core/ast'
 
 export const diagnosticConfig: ServerCapabilities['diagnosticProvider'] = {
   workspaceDiagnostics: false,
@@ -49,8 +50,17 @@ export async function checkDiagnostics(
 
   await ohm.forEachRules(uri, async (rule) => {
     for (const body of rule.body) {
-      for (const term of body.terms) {
+      await iterSeq(body)
+    }
+
+    async function iterSeq(seq: OhmAST.Tokens.Seq) {
+      for (const term of seq.terms) {
         const termSource = term._source
+
+        if (term.type === OhmAST.Type.Seq) {
+          await iterSeq(term)
+          continue
+        }
 
         const isLiteralStr = (s: string) => s.startsWith('"') && s.endsWith('"')
 

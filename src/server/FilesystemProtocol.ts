@@ -13,6 +13,7 @@ import {
   type FilesystemCommonParams,
   type FilesystemEvents,
   type FilesystemOpenedParams,
+  type FilesystemRenameParams,
   type IFilesystem,
 } from '../shared/FilesystemProtocol'
 
@@ -42,6 +43,19 @@ export class BaseFileSystem implements IFilesystem {
       this.log.info(`[fs:open]: ${evt.uri}`)
 
       this.create(evt.uri, evt.content)
+    })
+
+    conn.onRequest(FilesystemMethod.Rename, (evt: FilesystemRenameParams) => {
+      this.log.info(`[fs:rename]: ${evt.uri} => ${evt.newUri}`)
+
+      const doc = this.documents.get(evt.uri)
+
+      if (!doc) {
+        return
+      }
+
+      this.delete(evt.uri)
+      this.create(evt.newUri, doc.getText())
     })
   }
 
@@ -89,6 +103,8 @@ export class BaseFileSystem implements IFilesystem {
   }
 
   delete(uri: string) {
+    this.log.info(`[fs:delete]: ${uri}`)
+
     this.documents.delete(uri)
     this.events.emit('deleted', uri)
   }
