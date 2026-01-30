@@ -1,4 +1,4 @@
-import { parseAST, type OhmAST } from '../core/ast'
+import { OhmAST, parseAST } from '../core/ast'
 import {
   Diagnostic,
   DiagnosticSeverity,
@@ -9,6 +9,7 @@ import { joinRelativeURL } from 'ufo'
 import { isGrammarParseError } from '../core/ohm'
 import type { IFilesystem } from '../shared/FilesystemProtocol'
 import { covertIntervalToRange } from '../core/utils'
+import type { Awaitable } from '@0x-jerry/utils'
 
 export interface LocationRule extends OhmAST.Tokens.Rule {
   uri: string
@@ -212,6 +213,39 @@ export class OhmLanguage {
 
       for (const ohmFileUri of paths) {
         await this.forEachRules(ohmFileUri, callback, opt)
+      }
+    }
+  }
+
+  async iterAllTerms(
+    uri: string,
+    callback: (token: OhmAST.Token) => Awaitable<void>,
+  ) {
+    await this.forEachRules(uri, async (rule) => {
+      for (const body of rule.body) {
+        await iterSeq(body)
+      }
+    })
+
+    async function iterSeq(seq: OhmAST.Tokens.Seq) {
+      for (const term of seq.terms) {
+        if (term.type === OhmAST.Type.Seq) {
+          await iterSeq(term)
+          continue
+        }
+
+        if (term.type === OhmAST.Type.BaseApplication) {
+          if (term.ident) {
+            await callback(term.ident)
+          }
+
+          for (const param of term.params || []) {
+            await iterSeq(param)
+          }
+          continue
+        }
+
+        await callback(term)
       }
     }
   }

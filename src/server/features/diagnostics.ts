@@ -48,36 +48,21 @@ export async function checkDiagnostics(
     items: [...data.diagnostics],
   }
 
-  await ohm.forEachRules(uri, async (rule) => {
-    for (const body of rule.body) {
-      await iterSeq(body)
+  await ohm.iterAllTerms(uri, async (term) => {
+    const termSource = term._source
+
+    if (isLiteralStr(termSource)) {
+      return
     }
 
-    async function iterSeq(seq: OhmAST.Tokens.Seq) {
-      for (const term of seq.terms) {
-        const termSource = term._source
+    allTermNames.add(termSource)
 
-        if (term.type === OhmAST.Type.Seq) {
-          await iterSeq(term)
-          continue
-        }
-
-        const isLiteralStr = (s: string) => s.startsWith('"') && s.endsWith('"')
-
-        if (isLiteralStr(termSource)) {
-          continue
-        }
-
-        allTermNames.add(termSource)
-
-        if (!(await hasRule(uri, termSource))) {
-          diagnostics.items.push({
-            severity: DiagnosticSeverity.Warning,
-            message: `Can not find rule ${termSource}!`,
-            range: term.range,
-          })
-        }
-      }
+    if (!(await hasRule(uri, termSource))) {
+      diagnostics.items.push({
+        severity: DiagnosticSeverity.Warning,
+        message: `Can not find rule ${termSource}!`,
+        range: term.range,
+      })
     }
   })
 
@@ -108,11 +93,15 @@ export async function checkDiagnostics(
       return true
     }
     let has = false
-    await ohm.forEachRules(uri, (rule) => {
-      if (rule.name._source === ruleName) {
-        has = true
-      }
-    })
+    await ohm.forEachRules(
+      uri,
+      (rule) => {
+        if (rule.name._source === ruleName) {
+          has = true
+        }
+      },
+      { includeRefs: true },
+    )
 
     return has
   }
@@ -150,4 +139,8 @@ export function registerDiagnostics(
       })
     }
   })
+}
+
+function isLiteralStr(s: string) {
+  return s.startsWith('"') && s.endsWith('"')
 }

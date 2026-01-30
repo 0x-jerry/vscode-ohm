@@ -7,7 +7,7 @@ describe('#ast', () => {
       const ast = parseAST(`
 Silver {
     Hello = f
-    f = letter (a | b)
+    f = letter ListOf<a, "|">
     f f2
 }
 `)

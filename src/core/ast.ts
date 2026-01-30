@@ -23,6 +23,7 @@ export namespace OhmAST {
     Pred,
     Lex,
     Base,
+    BaseApplication,
     ruleDescr,
     ruleDescrText,
     caseName,
@@ -80,12 +81,16 @@ export namespace OhmAST {
 
     export interface Seq extends Token {
       type: Type.Seq
-      terms: (Term | terminal | Seq)[]
+      terms: (Base | TermApplication | terminal | Seq)[]
     }
 
-    export interface Term extends Token {
+    export interface Base extends Token {
       type: Type.Base
-      ident?: Token
+    }
+
+    export interface TermApplication extends Token {
+      type: Type.BaseApplication
+      ident: Token
       params?: Seq[]
     }
 
@@ -103,7 +108,8 @@ export namespace OhmAST {
       | Grammar
       | Rule
       | Seq
-      | Term
+      | Base
+      | TermApplication
       | Formals
       | SuperGrammar
       | terminal
@@ -210,6 +216,9 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
     t.idents = terms.asIteration().children.map((item) => item.sourceString)
     return t
   },
+  Params(arg0, iterSeq, arg2) {
+    return iterSeq.toAST(astMapping)
+  },
   RuleBody(arg0, terms) {
     return terms.toAST(astMapping)
   },
@@ -269,9 +278,11 @@ const astMapping: OhmActionDict<OhmAST.Tokens.All> = {
   Base(inner) {
     return inner.toAST(astMapping)
   },
-  Base_application(ident, _) {
-    const t = createToken(this, OhmAST.Type.Base)
-    t.ident = ident.toAST({ a: 1 })
+  Base_application(ident, iterParams) {
+    const t = createToken(this, OhmAST.Type.BaseApplication)
+    t.ident = ident.toAST({})
+
+    t.params = iterParams.toAST({})
 
     return t
   },
