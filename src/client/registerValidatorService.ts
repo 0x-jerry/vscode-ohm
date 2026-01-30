@@ -15,11 +15,7 @@ import {
   type OhmValidateParams,
   type OhmValidateResult,
 } from '../shared/OhmCustomProtocol'
-
-export interface ValidatorMatchConfig {
-  match: string[]
-  grammar: string
-}
+import { ConfigKey, getConfig, getConfigKeyString } from './configuration'
 
 export function registerValidatorService(client: BaseLanguageClient) {
   const diagnosticCollection =
@@ -35,9 +31,23 @@ export function registerValidatorService(client: BaseLanguageClient) {
     }),
   ]
 
-  workspace.textDocuments.forEach((doc) => validate(doc))
+  workspace.onDidChangeConfiguration(async (e) => {
+    if (!e.affectsConfiguration(getConfigKeyString(ConfigKey.validator))) {
+      return
+    }
+
+    diagnosticCollection.clear()
+
+    triggerValidate()
+  })
+
+  triggerValidate()
 
   return Disposable.from(...disposables)
+
+  function triggerValidate() {
+    workspace.textDocuments.forEach((doc) => validate(doc))
+  }
 
   async function validate(doc: TextDocument) {
     const conf = getMatchedValidatorConfig(doc.uri)
@@ -92,9 +102,7 @@ export function getMatchedValidatorConfig(uri: Uri) {
     return
   }
 
-  const configs = workspace
-    .getConfiguration('ohm-js')
-    .get<ValidatorMatchConfig[]>('validator')
+  const configs = getConfig(ConfigKey.validator)
 
   return configs?.find((conf) => {
     return picomatch.isMatch(uri.fsPath, conf.match)

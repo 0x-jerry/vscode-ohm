@@ -1,9 +1,11 @@
 import {
+  commands,
   Disposable,
   Hover,
   languages,
   Location,
   Uri,
+  window,
   workspace,
   type CancellationToken,
   type Definition,
@@ -22,9 +24,9 @@ import {
 } from '../shared/OhmCustomProtocol'
 import {
   getMatchedValidatorConfig,
-  type ValidatorMatchConfig,
 } from './registerValidatorService'
 import { convertRange } from './utils'
+import { ConfigKey, getConfig, getConfigKeyString } from './configuration'
 
 class OhmHoverImpl implements HoverProvider {
   constructor(readonly client: BaseLanguageClient) {}
@@ -121,33 +123,52 @@ class OhmDefImpl implements DefinitionProvider {
 }
 
 export function registerTraceService(client: BaseLanguageClient) {
-  const configs = workspace
-    .getConfiguration('ohm-js')
-    .get<ValidatorMatchConfig[]>('validator')
+  let unregister: Disposable = registerServices()
 
-  if (!configs?.length) {
-    return Disposable.from()
-  }
+  workspace.onDidChangeConfiguration(async (e) => {
+    if (!e.affectsConfiguration(getConfigKeyString(ConfigKey.validator))) {
+      return
+    }
 
-  const selectors: DocumentFilter[] = configs.flatMap((conf) => {
-    return conf.match.map((pattern) => {
-      const selector: DocumentFilter = {
-        scheme: 'file',
-        pattern: pattern,
-      }
-      return selector
-    })
+    unregister.dispose()
+
+    unregister = registerServices()
   })
 
-  const hover = languages.registerHoverProvider(
-    selectors,
-    new OhmHoverImpl(client),
-  )
+  return Disposable.from({
+    dispose() {
+      unregister.dispose()
+    },
+  })
 
-  const def = languages.registerDefinitionProvider(
-    selectors,
-    new OhmDefImpl(client),
-  )
+  function registerServices() {
+    const configs = getConfig(ConfigKey.validator)
 
-  return Disposable.from(hover, def)
+
+    if (!configs?.length) {
+      return Disposable.from()
+    }
+
+    const selectors: DocumentFilter[] = configs.flatMap((conf) => {
+      return conf.match.map((pattern) => {
+        const selector: DocumentFilter = {
+          scheme: 'file',
+          pattern: pattern,
+        }
+        return selector
+      })
+    })
+
+    const hover = languages.registerHoverProvider(
+      selectors,
+      new OhmHoverImpl(client),
+    )
+
+    const def = languages.registerDefinitionProvider(
+      selectors,
+      new OhmDefImpl(client),
+    )
+
+    return Disposable.from(hover, def)
+  }
 }
