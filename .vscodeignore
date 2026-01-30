@@ -3,3 +3,6 @@ playground
 docs
 .github
 .vscode
+pnpm-lock.yaml
+tsconfig.json
+*.ts
