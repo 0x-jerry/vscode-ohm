@@ -16,6 +16,7 @@ import {
   type OhmValidateResult,
 } from '../shared/OhmCustomProtocol'
 import { ConfigKey, getConfig, getConfigKeyString } from './configuration'
+import { convertRange } from './utils'
 
 export function registerValidatorService(client: BaseLanguageClient) {
   const diagnosticCollection =
@@ -29,6 +30,19 @@ export function registerValidatorService(client: BaseLanguageClient) {
     workspace.onDidChangeTextDocument(async (evt) => {
       await validate(evt.document)
     }),
+    workspace.onDidSaveTextDocument(async (evt) => {
+      if (!isOhmFile(evt.uri)) {
+        return
+      }
+
+      const docs = getMatchedDocsByGrammar(evt.uri) || []
+      for (const doc of docs) {
+        await validate(doc)
+      }
+    }),
+    workspace.onDidCloseTextDocument(evt => {
+      diagnosticCollection.delete(evt.uri)
+    })
   ]
 
   workspace.onDidChangeConfiguration(async (e) => {
@@ -79,10 +93,7 @@ export function registerValidatorService(client: BaseLanguageClient) {
       diagnosticCollection.set(
         doc.uri,
         result.errors.map((err) => {
-          const range = new Range(
-            new Position(err.range.start.line, err.range.start.character),
-            new Position(err.range.end.line, err.range.end.character),
-          )
+          const range = convertRange(err.range)
 
           return new Diagnostic(
             range,
@@ -95,6 +106,31 @@ export function registerValidatorService(client: BaseLanguageClient) {
       diagnosticCollection.delete(doc.uri)
     }
   }
+}
+
+function getMatchedDocsByGrammar(uri: Uri) {
+  const folderUri = workspace.getWorkspaceFolder(uri)
+  if (!folderUri) {
+    return
+  }
+
+  const configs = getConfig(ConfigKey.validator)?.filter((conf) => {
+    const grammarUri = Uri.joinPath(folderUri.uri, conf.grammar)
+
+    return grammarUri.toString() === uri.toString()
+  })
+
+  if (!configs?.length) {
+    return
+  }
+
+  return workspace.textDocuments.filter((doc) => {
+    return configs.some((conf) => picomatch.isMatch(doc.uri.fsPath, conf.match))
+  })
+}
+
+function isOhmFile(uri: Uri) {
+  return uri.scheme === 'file' && uri.path.endsWith('.ohm')
 }
 
 export function getMatchedValidatorConfig(uri: Uri) {
