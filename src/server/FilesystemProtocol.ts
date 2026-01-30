@@ -26,24 +26,20 @@ export class BaseFileSystem implements IFilesystem {
   }
 
   constructor(readonly conn: Connection) {
-    conn.onRequest(
-      FilesystemMethod.Deleted,
-      ({ uri }: FilesystemCommonParams) => {
-        this.log.info(`file removed: ${uri}`)
-        this.delete(uri)
-      },
-    )
+    conn.onRequest(FilesystemMethod.Deleted, (evt: FilesystemCommonParams) => {
+      this.log.info(`[fs:delete]: ${evt.uri}`)
+
+      this.delete(evt.uri)
+    })
 
     conn.onRequest(FilesystemMethod.Changed, (evt: FilesystemChangedParams) => {
-      this.log.info(`file changed: ${evt.uri}`)
+      this.log.info(`[fs:change]: ${evt.uri}`)
 
       this.sync(evt.uri, evt.changes)
     })
 
     conn.onRequest(FilesystemMethod.Opened, (evt: FilesystemOpenedParams) => {
-      const uri = evt.uri
-
-      this.log.info(`file opened: ${uri}`)
+      this.log.info(`[fs:open]: ${evt.uri}`)
 
       this.create(evt.uri, evt.content)
     })
@@ -55,10 +51,16 @@ export class BaseFileSystem implements IFilesystem {
    * @param content
    */
   create(uri: string, content: string) {
+    if (this.documents.get(uri)?.getText() === content) {
+      return
+    }
+
+    this.log.info(`[fs:create]: ${uri}`)
+
     const doc = TextDocument.create(uri, 'ohm', 0, content)
 
     this.documents.set(doc.uri, doc)
-    this.events.emit('changed', uri)
+    this.events.emit('created', uri)
   }
 
   /**
@@ -71,7 +73,7 @@ export class BaseFileSystem implements IFilesystem {
     let doc = this.documents.get(uri)
 
     if (!doc) {
-      this.log.warn(`Can not find file: ${uri}`)
+      this.log.warn(`[fs:sync] Can not find file: ${uri}`)
 
       throw new Error(`Can not find file for ${uri}`)
     }
@@ -79,8 +81,7 @@ export class BaseFileSystem implements IFilesystem {
     try {
       TextDocument.update(doc, changes, doc.version + 1)
     } catch (error) {
-      this.log.warn(`Patch file failed: ${String(error)}`)
-      this.log.warn(`Patch params: ${uri}, ${JSON.stringify(changes)}`)
+      this.log.warn(`[fs:sync] Patch file failed: ${String(error)}`)
     }
 
     this.events.emit('changed', uri)

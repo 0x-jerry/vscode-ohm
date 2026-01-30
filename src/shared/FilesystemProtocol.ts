@@ -8,8 +8,10 @@ import {
 export interface IFilesystem {
   readContent(uri: string): Promise<string | null>
 
-  on(event: 'changed', callback: (uri: string) => void): void
-  on(event: 'deleted', callback: (uri: string) => void): void
+  on<key extends keyof FilesystemEvents>(
+    event: key,
+    callback: (...args: FilesystemEvents[key]) => void,
+  ): void
 
   getWordAtPosition(
     uri: string,
@@ -49,4 +51,5 @@ export interface FilesystemOpenedParams {
 export interface FilesystemEvents {
   deleted: [uri: string]
   changed: [uri: string]
+  created: [uri: string]
 }

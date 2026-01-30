@@ -1,23 +1,12 @@
-import {
-  Uri,
-  window,
-  workspace,
-  type ExtensionContext,
-  type OutputChannel,
-} from 'vscode'
-import {
-  LanguageClient,
-  type LanguageClientOptions,
-} from 'vscode-languageclient/browser'
-import { registerClientServices } from '../client'
+import { Uri, window, type ExtensionContext, type OutputChannel } from 'vscode'
+import { LanguageClient } from 'vscode-languageclient/browser'
+import { languageClientOptions, registerClientServices } from '../client'
 
 export async function activate(context: ExtensionContext) {
   const output = window.createOutputChannel('Ohm Language')
   context.subscriptions.push(output)
 
   const client = startLSP(context, output)
-
-  context.subscriptions.push(registerClientServices(client))
 
   context.subscriptions.push({
     dispose() {
@@ -31,21 +20,15 @@ function startLSP(context: ExtensionContext, log: OutputChannel) {
 
   const worker = new Worker(serverMain.toString(true))
 
-  const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: 'file', language: 'ohm' }],
-    synchronize: {
-      fileEvents: workspace.createFileSystemWatcher('**/.ohm'),
-    },
-    initializationOptions: {},
-  }
-
   // Create the language client and start the client.
   const client = new LanguageClient(
     'lsp.ohm',
     'Ohm Language Server',
-    clientOptions,
+    languageClientOptions,
     worker,
   )
+
+  context.subscriptions.push(registerClientServices(client))
 
   // Start the client. This will also launch the server
   client.start()

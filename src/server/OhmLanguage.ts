@@ -1,10 +1,9 @@
 import { parseAST, type OhmAST } from '../core/ast'
 import {
+  Diagnostic,
   DiagnosticSeverity,
-  DocumentDiagnosticReportKind,
   SymbolInformation,
   SymbolKind,
-  type DocumentDiagnosticReport,
 } from 'vscode-languageserver'
 import { joinRelativeURL } from 'ufo'
 import { isGrammarParseError } from '../core/ohm'
@@ -26,10 +25,11 @@ export interface OhmLanguageOptions {
   fs: IFilesystem
 }
 
-interface InternalCacheData {
+export interface InternalCacheData {
   uri: string
   ast?: OhmAST.Tokens.Grammars
-  diagnostics?: DocumentDiagnosticReport
+  diagnostics: Diagnostic[]
+  updatedAt: number
 }
 
 export class OhmLanguage {
@@ -54,7 +54,7 @@ export class OhmLanguage {
   }
 
   _updateCacheData(uri: string) {
-    this.log.info(`update cache data for: ${uri}`)
+    this.log.info(`[ohm] Update cache data: ${uri}`)
     const data = this._internalData.get(uri)
     const p = this._calcCacheData(uri, data)
 
@@ -78,20 +78,14 @@ export class OhmLanguage {
 
     const data = await this._internalData.get(uri)
 
-    const defaultData: InternalCacheData = {
-      uri,
-    }
-
-    return data || defaultData
+    return data!
   }
 
   async _parseAST(uri: string): Promise<InternalCacheData | null> {
     const data: InternalCacheData = {
       uri,
-      diagnostics: {
-        kind: DocumentDiagnosticReportKind.Full,
-        items: [],
-      },
+      diagnostics: [],
+      updatedAt: Date.now(),
     }
 
     const content = await this._getFileContent(uri)
@@ -104,26 +98,19 @@ export class OhmLanguage {
 
     try {
       data.ast = parseAST(content)
-
-      this.log.info(`parse ast for ${uri} success!`)
     } catch (error) {
-      if (isGrammarParseError(error)) {
-        this.log.warn(`parse ast for ${uri} failed! ${String(error)}`)
+      this.log.warn(`[ohm] Parse ast failed ${uri}: ${String(error)}`)
 
+      if (isGrammarParseError(error)) {
         const info = error.interval
 
         const range = covertIntervalToRange(info)
 
-        data.diagnostics = {
-          kind: DocumentDiagnosticReportKind.Full,
-          items: [
-            {
-              severity: DiagnosticSeverity.Error,
-              range,
-              message: error.shortMessage || error.message,
-            },
-          ],
-        }
+        data.diagnostics.push({
+          severity: DiagnosticSeverity.Error,
+          range,
+          message: error.shortMessage || error.message,
+        })
       }
     }
 
@@ -177,37 +164,55 @@ export class OhmLanguage {
     },
   ) {
     const { filter, includeRefs } = opt || {}
-    const data = await this.getInternalData(uri)
-    if (!data.ast) return []
 
     const rules: LocationRule[] = []
+
+    await this.forEachRules(
+      uri,
+      (rule) => {
+        if (!filter || filter(rule)) {
+          rules.push(rule)
+        }
+      },
+      {
+        includeRefs,
+      },
+    )
+
+    return rules
+  }
+
+  async forEachRules(
+    uri: string,
+    callback: (rule: LocationRule) => Promise<void> | void,
+    opt?: {
+      includeRefs?: boolean
+    },
+  ) {
+    const data = await this.getInternalData(uri)
     const ast = data.ast
 
-    ast.grammars.forEach((grammar) => {
-      grammar.rules.forEach((rule) => {
-        const _rule: LocationRule = {
+    if (!ast) return
+
+    for (const grammar of ast.grammars) {
+      for (const rule of grammar.rules) {
+        const locRule: LocationRule = {
           ...rule,
           uri,
         }
 
-        if (!filter || filter(_rule)) {
-          rules.push(_rule)
-        }
-      })
-    })
+        await callback(locRule)
+      }
+    }
 
-    if (includeRefs) {
+    if (opt?.includeRefs) {
       const paths = Object.values(ast.ref).map((item) =>
         joinRelativeURL(uri, '..', item),
       )
 
-      for (const ohmFilePath of paths) {
-        const superGrammarRules = await this.filterRules(ohmFilePath, opt)
-
-        if (superGrammarRules) rules.push(...superGrammarRules)
+      for (const ohmFileUri of paths) {
+        await this.forEachRules(ohmFileUri, callback, opt)
       }
     }
-
-    return rules
   }
 }
